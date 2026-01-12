@@ -2153,6 +2153,128 @@ async def seed_data():
         }
         await db.users.insert_one(admin_doc)
         logger.info("Created admin user: brijesh.kr.dube@gmail.com / Cloud@9874")
+    
+    # Seed data centers if not exist
+    dc_count = await db.datacenters.count_documents({})
+    if dc_count == 0:
+        datacenters = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": "US East (New York)",
+                "location": "New York",
+                "country": "United States",
+                "description": "Low latency to East Coast US and Europe",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "US West (Los Angeles)",
+                "location": "Los Angeles",
+                "country": "United States",
+                "description": "Optimal for West Coast US and Asia-Pacific",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "EU Central (Frankfurt)",
+                "location": "Frankfurt",
+                "country": "Germany",
+                "description": "Central European hub with excellent connectivity",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Asia (Singapore)",
+                "location": "Singapore",
+                "country": "Singapore",
+                "description": "Asia-Pacific region with low latency",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        await db.datacenters.insert_many(datacenters)
+        logger.info("Seeded initial data centers")
+    
+    # Seed add-ons if not exist
+    addon_count = await db.addons.count_documents({})
+    if addon_count == 0:
+        addons = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": "cPanel/WHM",
+                "type": "control_panel",
+                "price": 15.00,
+                "billing_cycle": "monthly",
+                "description": "Full-featured web hosting control panel",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Plesk",
+                "type": "control_panel",
+                "price": 12.00,
+                "billing_cycle": "monthly",
+                "description": "Web hosting platform for WordPress",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "SSL Certificate (Standard)",
+                "type": "ssl",
+                "price": 9.99,
+                "billing_cycle": "yearly",
+                "description": "Domain validated SSL certificate",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "SSL Certificate (Wildcard)",
+                "type": "ssl",
+                "price": 49.99,
+                "billing_cycle": "yearly",
+                "description": "Wildcard SSL for unlimited subdomains",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Daily Backup",
+                "type": "backup",
+                "price": 5.00,
+                "billing_cycle": "monthly",
+                "description": "Automated daily backups with 7-day retention",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Additional IPv4",
+                "type": "ip",
+                "price": 3.00,
+                "billing_cycle": "monthly",
+                "description": "Additional dedicated IPv4 address",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Priority Support",
+                "type": "support",
+                "price": 19.99,
+                "billing_cycle": "monthly",
+                "description": "24/7 priority support with 1-hour response time",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        await db.addons.insert_many(addons)
+        logger.info("Seeded initial add-ons")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
