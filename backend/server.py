@@ -1094,6 +1094,51 @@ async def admin_delete_plan(plan_id: str, admin: dict = Depends(get_admin_user))
     await db.plans.delete_one({"id": plan_id})
     return {"message": "Plan deleted", "deleted": True}
 
+# ============ SITE SETTINGS ROUTES ============
+
+@admin_router.get("/settings")
+async def admin_get_settings(admin: dict = Depends(get_admin_user)):
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    if settings:
+        del settings["_id"]
+    return settings or {}
+
+@admin_router.put("/settings")
+async def admin_update_settings(data: SiteSettingsUpdate, admin: dict = Depends(get_admin_user)):
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.site_settings.update_one(
+        {"_id": "site_settings"},
+        {"$set": updates},
+        upsert=True
+    )
+    return {"message": "Settings updated"}
+
+@api_router.get("/settings/public")
+async def get_public_settings():
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    if not settings:
+        return {
+            "company_name": "CloudNest",
+            "company_description": "Enterprise Cloud Infrastructure Provider",
+            "contact_email": "support@cloudnest.com",
+            "contact_phone": "+1 (555) 123-4567",
+            "contact_address": "123 Cloud Street, Tech City, TC 12345",
+            "skype_id": "",
+            "about_us": "CloudNest provides enterprise-grade cloud infrastructure including VPS, Shared Hosting, and Dedicated Servers.",
+            "terms_of_service": "",
+            "privacy_policy": "",
+            "sla": "",
+            "aup": "",
+            "data_centers": "",
+            "social_twitter": "",
+            "social_linkedin": "",
+            "social_github": ""
+        }
+    del settings["_id"]
+    return settings
+
 # ============ PUBLIC ROUTES ============
 
 @api_router.post("/contact")
