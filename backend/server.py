@@ -240,6 +240,25 @@ class AdminPlanUpdate(BaseModel):
     features: Optional[List[str]] = None
     is_active: Optional[bool] = None
 
+class SiteSettingsUpdate(BaseModel):
+    company_name: Optional[str] = None
+    company_description: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_address: Optional[str] = None
+    skype_id: Optional[str] = None
+    about_us: Optional[str] = None
+    terms_of_service: Optional[str] = None
+    privacy_policy: Optional[str] = None
+    sla: Optional[str] = None
+    aup: Optional[str] = None
+    data_centers: Optional[str] = None
+    bank_transfer_details: Optional[str] = None
+    crypto_addresses: Optional[str] = None
+    social_twitter: Optional[str] = None
+    social_linkedin: Optional[str] = None
+    social_github: Optional[str] = None
+
 class Setup2FAResponse(BaseModel):
     secret: str
     qr_uri: str
