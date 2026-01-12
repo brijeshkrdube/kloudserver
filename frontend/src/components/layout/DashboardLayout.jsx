@@ -38,6 +38,7 @@ const DashboardLayout = ({ children, isAdmin = false }) => {
     { name: 'Billing', href: '/admin/billing', icon: FileText },
     { name: 'Plans', href: '/admin/plans', icon: Tags },
     { name: 'Tickets', href: '/admin/tickets', icon: MessageSquare },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
   const navItems = isAdmin ? adminNavItems : userNavItems;
