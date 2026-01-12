@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, Loader2, Globe, Phone, Mail, MapPin, FileText, Shield, Server } from 'lucide-react';
+import { Settings, Save, Loader2, Globe, Phone, Mail, MapPin, FileText, Shield, Server, Send } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -30,6 +30,8 @@ const AdminSettings = () => {
     social_twitter: '',
     social_linkedin: '',
     social_github: '',
+    sendgrid_api_key: '',
+    sender_email: '',
   });
 
   useEffect(() => {
