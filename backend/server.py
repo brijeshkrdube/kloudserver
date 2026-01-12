@@ -63,6 +63,8 @@ invoices_router = APIRouter(prefix="/invoices", tags=["Invoices"])
 tickets_router = APIRouter(prefix="/tickets", tags=["Tickets"])
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 user_router = APIRouter(prefix="/user", tags=["User"])
+datacenters_router = APIRouter(prefix="/datacenters", tags=["Data Centers"])
+addons_router = APIRouter(prefix="/addons", tags=["Add-ons"])
 
 security = HTTPBearer()
 
