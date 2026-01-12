@@ -106,6 +106,7 @@ function App() {
           <Route path="/dashboard/services" element={<ProtectedRoute><UserServices /></ProtectedRoute>} />
           <Route path="/dashboard/servers/:serverId" element={<ProtectedRoute><UserServerDetails /></ProtectedRoute>} />
           <Route path="/dashboard/order" element={<ProtectedRoute><UserOrderServer /></ProtectedRoute>} />
+          <Route path="/dashboard/orders/:orderId" element={<ProtectedRoute><UserOrderDetails /></ProtectedRoute>} />
           <Route path="/dashboard/billing" element={<ProtectedRoute><UserBilling /></ProtectedRoute>} />
           <Route path="/dashboard/wallet" element={<ProtectedRoute><UserWallet /></ProtectedRoute>} />
           <Route path="/dashboard/tickets" element={<ProtectedRoute><UserTickets /></ProtectedRoute>} />
@@ -117,6 +118,7 @@ function App() {
           <Route path="/admin/orders" element={<ProtectedRoute adminOnly><AdminOrders /></ProtectedRoute>} />
           <Route path="/admin/servers" element={<ProtectedRoute adminOnly><AdminServers /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/users/:userId" element={<ProtectedRoute adminOnly><AdminUserDetails /></ProtectedRoute>} />
           <Route path="/admin/billing" element={<ProtectedRoute adminOnly><AdminBilling /></ProtectedRoute>} />
           <Route path="/admin/plans" element={<ProtectedRoute adminOnly><AdminPlans /></ProtectedRoute>} />
           <Route path="/admin/tickets" element={<ProtectedRoute adminOnly><AdminTickets /></ProtectedRoute>} />
