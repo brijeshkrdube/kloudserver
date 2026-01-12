@@ -1192,6 +1192,74 @@ async def admin_get_users(admin: dict = Depends(get_admin_user)):
     users = await db.users.find({"role": "user"}, {"_id": 0, "password_hash": 0, "totp_secret": 0}).to_list(500)
     return users
 
+@admin_router.get("/users/{user_id}/details")
+async def admin_get_user_details(user_id: str, admin: dict = Depends(get_admin_user)):
+    """Get comprehensive user details including orders, invoices, servers, and activity"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0, "totp_secret": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get user's orders
+    orders = await db.orders.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Get user's invoices
+    invoices = await db.invoices.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Get user's servers
+    servers = await db.servers.find({"user_id": user_id}, {"_id": 0}).to_list(100)
+    
+    # Get user's tickets
+    tickets = await db.tickets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    
+    # Get user's transactions
+    transactions = await db.transactions.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Calculate upcoming payments (unpaid invoices)
+    upcoming_payments = [inv for inv in invoices if inv.get("status") in ["unpaid", "pending"]]
+    
+    # Calculate statistics
+    total_spent = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
+    active_services = len([s for s in servers if s.get("status") == "active"])
+    open_tickets = len([t for t in tickets if t.get("status") == "open"])
+    
+    return {
+        "user": user,
+        "statistics": {
+            "total_spent": total_spent,
+            "active_services": active_services,
+            "total_orders": len(orders),
+            "open_tickets": open_tickets
+        },
+        "orders": orders,
+        "invoices": invoices,
+        "servers": servers,
+        "tickets": tickets,
+        "transactions": transactions,
+        "upcoming_payments": upcoming_payments
+    }
+
+@admin_router.post("/users/{user_id}/notify")
+async def admin_notify_user(user_id: str, subject: str, message: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Send notification email to user"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    background_tasks.add_task(
+        send_email,
+        user["email"],
+        subject,
+        f"""
+        <h2>{subject}</h2>
+        <p>Hi {user['full_name']},</p>
+        <div>{message}</div>
+        <hr>
+        <p>Best regards,<br>CloudNest Team</p>
+        """
+    )
+    
+    return {"message": f"Notification sent to {user['email']}"}
+
 @admin_router.put("/users/{user_id}")
 async def admin_update_user(user_id: str, is_verified: Optional[bool] = None, wallet_balance: Optional[float] = None,
                             admin: dict = Depends(get_admin_user)):
