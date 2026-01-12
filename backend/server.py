@@ -400,11 +400,17 @@ async def send_email(to_email: str, subject: str, html_content: str):
             html_content=html_content
         )
         sg = SendGridAPIClient(api_key)
-        sg.send(message)
-        logging.info(f"Email sent to {to_email}: {subject}")
+        response = sg.send(message)
+        logging.info(f"Email sent to {to_email}: {subject} (status: {response.status_code})")
         return True
     except Exception as e:
-        logging.error(f"Failed to send email: {e}")
+        error_msg = str(e)
+        if "401" in error_msg or "Unauthorized" in error_msg:
+            logging.error(f"SendGrid authentication failed - invalid API key")
+        elif "403" in error_msg or "Forbidden" in error_msg:
+            logging.error(f"SendGrid sender email not verified: {sender}")
+        else:
+            logging.error(f"Failed to send email: {e}")
         return False
 
 async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
