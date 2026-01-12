@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Server, Edit, Save, X, Loader2 } from 'lucide-react';
+import { Server, Edit, Save, X, Loader2, Mail } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -14,6 +14,7 @@ const AdminServers = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [sendingEmail, setSendingEmail] = useState(null);
 
   useEffect(() => {
     fetchServers();
@@ -49,6 +50,18 @@ const AdminServers = () => {
       fetchServers();
     } catch (error) {
       toast.error('Failed to update server');
+    }
+  };
+
+  const handleSendCredentials = async (serverId) => {
+    setSendingEmail(serverId);
+    try {
+      await api.post(`/admin/servers/${serverId}/send-credentials`);
+      toast.success('Credentials email sent to user');
+    } catch (error) {
+      toast.error('Failed to send credentials email');
+    } finally {
+      setSendingEmail(null);
     }
   };
 
