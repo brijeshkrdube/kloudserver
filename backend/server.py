@@ -1593,6 +1593,8 @@ api_router.include_router(invoices_router)
 api_router.include_router(tickets_router)
 api_router.include_router(user_router)
 api_router.include_router(admin_router)
+api_router.include_router(datacenters_router)
+api_router.include_router(addons_router)
 
 app.include_router(api_router)
 
