@@ -102,6 +102,8 @@ function App() {
           <Route path="/aup" element={<AUPPage />} />
           <Route path="/data-centers" element={<DataCentersPage />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           
           {/* User Dashboard Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
