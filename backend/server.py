@@ -996,41 +996,84 @@ async def admin_get_plans(admin: dict = Depends(get_admin_user)):
     plans = await db.plans.find({}, {"_id": 0}).to_list(100)
     return plans
 
+@admin_router.get("/plans/{plan_id}")
+async def admin_get_plan(plan_id: str, admin: dict = Depends(get_admin_user)):
+    plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
+
 @admin_router.post("/plans")
-async def admin_create_plan(name: str, type: str, cpu: str, ram: str, storage: str, bandwidth: str,
-                            price_monthly: float, price_quarterly: float, price_yearly: float,
-                            features: List[str], admin: dict = Depends(get_admin_user)):
+async def admin_create_plan(data: AdminPlanCreate, admin: dict = Depends(get_admin_user)):
     plan_id = str(uuid.uuid4())
     plan_doc = {
         "id": plan_id,
-        "name": name,
-        "type": type,
-        "cpu": cpu,
-        "ram": ram,
-        "storage": storage,
-        "bandwidth": bandwidth,
-        "price_monthly": price_monthly,
-        "price_quarterly": price_quarterly,
-        "price_yearly": price_yearly,
-        "features": features,
+        "name": data.name,
+        "type": data.type,
+        "cpu": data.cpu,
+        "ram": data.ram,
+        "storage": data.storage,
+        "bandwidth": data.bandwidth,
+        "price_monthly": data.price_monthly,
+        "price_quarterly": data.price_quarterly,
+        "price_yearly": data.price_yearly,
+        "features": data.features,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.plans.insert_one(plan_doc)
-    return {"message": "Plan created", "plan_id": plan_id}
+    return {"message": "Plan created", "plan_id": plan_id, "plan": plan_doc}
 
 @admin_router.put("/plans/{plan_id}")
-async def admin_update_plan(plan_id: str, is_active: Optional[bool] = None, price_monthly: Optional[float] = None,
-                            admin: dict = Depends(get_admin_user)):
+async def admin_update_plan(plan_id: str, data: AdminPlanUpdate, admin: dict = Depends(get_admin_user)):
+    plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
     updates = {}
-    if is_active is not None:
-        updates["is_active"] = is_active
-    if price_monthly is not None:
-        updates["price_monthly"] = price_monthly
+    if data.name is not None:
+        updates["name"] = data.name
+    if data.cpu is not None:
+        updates["cpu"] = data.cpu
+    if data.ram is not None:
+        updates["ram"] = data.ram
+    if data.storage is not None:
+        updates["storage"] = data.storage
+    if data.bandwidth is not None:
+        updates["bandwidth"] = data.bandwidth
+    if data.price_monthly is not None:
+        updates["price_monthly"] = data.price_monthly
+    if data.price_quarterly is not None:
+        updates["price_quarterly"] = data.price_quarterly
+    if data.price_yearly is not None:
+        updates["price_yearly"] = data.price_yearly
+    if data.features is not None:
+        updates["features"] = data.features
+    if data.is_active is not None:
+        updates["is_active"] = data.is_active
     
     if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.plans.update_one({"id": plan_id}, {"$set": updates})
-    return {"message": "Plan updated"}
+    
+    updated_plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    return {"message": "Plan updated", "plan": updated_plan}
+
+@admin_router.delete("/plans/{plan_id}")
+async def admin_delete_plan(plan_id: str, admin: dict = Depends(get_admin_user)):
+    plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Check if plan has any orders
+    orders_count = await db.orders.count_documents({"plan_id": plan_id})
+    if orders_count > 0:
+        # Don't delete, just deactivate
+        await db.plans.update_one({"id": plan_id}, {"$set": {"is_active": False}})
+        return {"message": "Plan deactivated (has existing orders)", "deactivated": True}
+    
+    await db.plans.delete_one({"id": plan_id})
+    return {"message": "Plan deleted", "deleted": True}
 
 # ============ PUBLIC ROUTES ============
 
