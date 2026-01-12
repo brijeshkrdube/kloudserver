@@ -51,7 +51,7 @@ SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@cloudnest.com')
 
 # Create the main app
-app = FastAPI(title="CloudNest API", version="1.0.0", redirect_slashes=False)
+app = FastAPI(title="CloudNest API", version="1.0.0")
 
 # Create routers
 api_router = APIRouter(prefix="/api")
