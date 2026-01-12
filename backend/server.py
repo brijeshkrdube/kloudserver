@@ -201,6 +201,42 @@ class TransactionResponse(BaseModel):
     reference: Optional[str]
     created_at: str
 
+# Data Center Models
+class DataCenterCreate(BaseModel):
+    name: str
+    location: str
+    country: str
+    description: Optional[str] = None
+
+class DataCenterResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    location: str
+    country: str
+    description: Optional[str]
+    is_active: bool
+    created_at: str
+
+# Add-on Models
+class AddOnCreate(BaseModel):
+    name: str
+    type: Literal["control_panel", "ssl", "backup", "ip", "support", "other"]
+    price: float
+    billing_cycle: Literal["monthly", "yearly", "one_time"]
+    description: Optional[str] = None
+
+class AddOnResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    type: str
+    price: float
+    billing_cycle: str
+    description: Optional[str]
+    is_active: bool
+    created_at: str
+
 class WalletTopupRequest(BaseModel):
     amount: float
     payment_method: Literal["bank_transfer", "crypto"]
