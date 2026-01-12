@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Server, LayoutDashboard, ShoppingCart, CreditCard, Wallet, 
   MessageSquare, User, Settings, LogOut, Menu, X, ChevronRight,
-  Users, Package, FileText, Bell, Tags, MapPin, Puzzle
+  Users, Package, FileText, Bell, Tags, MapPin, Puzzle, Zap
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +40,7 @@ const DashboardLayout = ({ children, isAdmin = false }) => {
     { name: 'Data Centers', href: '/admin/datacenters', icon: MapPin },
     { name: 'Add-ons', href: '/admin/addons', icon: Puzzle },
     { name: 'Tickets', href: '/admin/tickets', icon: MessageSquare },
+    { name: 'Automation', href: '/admin/automation', icon: Zap },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
