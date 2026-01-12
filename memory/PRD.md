@@ -14,113 +14,122 @@ Build a complete, production-ready web application for a server renting company 
 - **Frontend**: React + TailwindCSS + Shadcn/UI
 - **Backend**: FastAPI + MongoDB
 - **Authentication**: JWT with optional TOTP 2FA
-- **Email**: SendGrid integration (ready, needs API key)
-
-## User Personas
-1. **End Users**: Businesses and developers purchasing hosting services
-2. **Administrators**: Staff managing orders, servers, and support
+- **Email**: SendGrid integration (configurable via admin settings)
+- **PDF Generation**: ReportLab for invoice PDFs
 
 ## Core Requirements (Implemented)
 
 ### Public Website
-- Home page with hero, features, pricing preview, CTA
-- VPS Hosting page with plans
-- Shared Hosting page with plans
-- Dedicated Servers page with plans
-- Pricing comparison page with billing cycle toggle
+- Home, VPS, Shared Hosting, Dedicated Servers, Pricing pages
 - Contact form with email confirmation
 - User registration/login with 2FA support
-- About Us page (admin-managed content)
-- Terms of Service page (admin-managed)
-- Privacy Policy page (admin-managed)
-- SLA page (admin-managed)
-- AUP page (admin-managed)
-- Data Centers page (admin-managed)
+- About Us, Terms, Privacy, SLA, AUP, Data Centers pages (admin-managed)
 - Support Center page (Skype + Ticketing)
+- Password reset flow (forgot password + reset password pages)
 
 ### User Dashboard
 - Dashboard overview with stats
 - My Services (active servers list)
 - Server details with credentials (plain text + copy buttons)
+- **Server control actions** (Request Reboot, Request OS Reinstall - creates support tickets)
 - Order new server wizard (3-step process)
-- Billing & invoices management
+- **Order details with payment proof upload**
+- Billing & invoices with **PDF download**
 - Wallet with transaction history
 - Support ticket system with messaging
 - Profile & security (2FA setup/disable)
 
 ### Admin Panel
 - Dashboard with key metrics
-- Order management (view, update status, mark paid)
-- Server provisioning (create server, enter credentials)
-- Server credential management (edit + send email)
-- User management (view users, update wallet balance, verify)
-- Billing/invoice management (mark as paid)
-- Support ticket management with replies
-- Plan management (CRUD for service plans)
-- Site Settings management (company info, contact, legal pages, payment info, social links)
-
-### Database Models
-- Users (auth, 2FA, wallet)
-- Plans (VPS, Shared, Dedicated with pricing tiers)
-- Orders (with billing cycle, OS, control panel options)
-- Servers (credentials, renewal dates)
-- Invoices (auto-generated on order)
-- Tickets & Messages (support system)
-- Transactions (wallet history)
-- SiteSettings (singleton for site configuration)
+- **Order management with user details** (name, email, company displayed)
+- Server provisioning and credential management (edit + send email)
+- **User management with detailed view** (orders, invoices, servers, tickets, transactions)
+- **Send notification to users via email**
+- Billing/invoice management
+- Support ticket management
+- Plan management (CRUD)
+- **Site Settings with Email configuration** (SendGrid API key, sender email)
 
 ## What's Been Implemented
 
-### January 12, 2026 - Session 1
-1. Complete Backend API - 40+ endpoints for auth, plans, orders, servers, invoices, tickets, admin
-2. Full User Dashboard - 9 pages for managing services, billing, tickets, profile
-3. Complete Admin Panel - 7 pages for managing orders, servers, users, billing, tickets
-4. Authentication System - JWT with 2FA (TOTP) support
-5. Order Flow - Plan selection -> Configuration -> Payment -> Admin provisioning
-6. Email Integration - SendGrid templates ready (needs API key)
-7. Seed Data - 7 plans auto-seeded, admin account created
-
 ### January 12, 2026 - Session 2
-1. **BUG FIX (P0)**: Fixed order page crash - Control Panel dropdown now uses value='none' instead of empty string
-2. **NEW FEATURE**: Admin-managed site settings with 5 tabs (Company, Contact, Pages, Payment, Social)
-3. **NEW PAGES**: About, Terms, Privacy, SLA, AUP, Data Centers, Support Center
-4. **NEW FEATURE**: Settings navigation link in admin sidebar
-5. **NEW FEATURE**: Footer updated with links to all static pages (watermark removed)
-6. **NEW FEATURE**: Support page with Skype integration and ticket system link
-7. **NEW FEATURE**: Admin can edit server credentials with email notification to user
-8. **NEW FEATURE**: "Send Credentials" button for admin to resend credentials email
+1. **BUG FIX (P0)**: Fixed order page crash
+2. Admin-managed site settings with 6 tabs (Company, Contact, Email, Pages, Payment, Social)
+3. New static pages (About, Terms, Privacy, SLA, AUP, Data Centers, Support)
+4. Footer updated with links, watermark reference removed
+5. Admin credential sharing with email notifications
+
+### January 12, 2026 - Session 3 (Current)
+1. **Email API Configuration**: Admin can configure SendGrid API key and sender email
+2. **PDF Invoice Generation**: Users can download invoices as PDF from billing page
+3. **Password Reset Flow**: Complete forgot password and reset password pages
+4. **Server Control Actions**: Request Reboot and OS Reinstall buttons (creates support tickets)
+5. **Payment Proof Upload**: Users can upload payment proof URL for orders
+6. **Admin Orders with User Details**: Shows customer name, email, company for each order
+7. **Admin User Details Page**: Full user activity view with tabs for Orders, Servers, Invoices, Tickets, Transactions
+8. **Admin Send Notification**: Send custom email notifications to users
+9. **Admin User Statistics**: Total spent, active services, total orders, open tickets
+
+## Database Models
+- `users`: {email, full_name, hashed_password, role, wallet_balance, is_active, totp_secret}
+- `plans`: {name, type, specs, price, features, is_active}
+- `orders`: {user_id, plan_id, billing_cycle, total_price, order_status, payment_proof_url}
+- `servers`: {user_id, order_id, name, ip_address, specs, credentials, status}
+- `invoices`: {user_id, invoice_number, amount, status, due_date}
+- `tickets` & `ticket_messages`: Support system
+- `transactions`: Wallet history
+- `site_settings`: Singleton with email config, contact info, legal pages
+- `payment_proofs`: Payment proof submissions
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
+### P0 (Critical) - COMPLETED ✅
 - Order page bug fix
 - Admin site settings
 - Admin credential sharing
+- Email API configuration
+- PDF invoice download
+- Password reset flow
+- Server control actions
+- Payment proof upload
+- Admin orders with user details
+- Admin user details page with full activity
 
 ### P1 (High Priority)
-- PDF invoice generation and download
-- Password reset flow completion
 - Data center selection during order
+- Auto invoice PDF email on creation
 
 ### P2 (Medium Priority)
-- Server control actions (reboot, reinstall OS)
 - Recurring invoice automation
-- Payment proof upload
 - Add-ons selection (cPanel, SSL, Backup, IPs)
+- Server usage statistics dashboard
 
 ### P3 (Low Priority)
-- Server usage statistics
 - Email templates customization in admin
 - Affiliate/referral system
 - Multi-language support
-- API documentation page
 - Live chat integration
 
 ## Test Credentials
 - **Admin**: brijesh.kr.dube@gmail.com / Cloud@9874
 - **User**: test@test.com / Test123!
 
-## Notes
-- SendGrid email integration is **MOCKED** (will log warning if API key not configured)
-- The "Made with Emergent" badge in bottom-right is a platform overlay, not part of the app
-- All static page content can be managed from Admin -> Settings
+## MOCKED Integrations
+- **SendGrid**: Email functionality logs warning if API key not configured. Configure via Admin → Settings → Email tab
+- **Server Control**: Reboot/Reinstall requests create support tickets (don't actually control servers)
+
+## API Endpoints Summary
+### Authentication
+- POST /api/auth/register, /api/auth/login
+- POST /api/auth/forgot-password, /api/auth/reset-password
+
+### User
+- GET /api/plans, /api/orders, /api/servers, /api/invoices, /api/tickets
+- GET /api/invoices/{id}/pdf - PDF download
+- POST /api/orders, /api/servers/{id}/control, /api/orders/{id}/payment-proof
+
+### Admin
+- GET /api/admin/stats, /api/admin/orders (includes user details)
+- GET /api/admin/users/{id}/details - Full user activity
+- POST /api/admin/users/{id}/notify - Send notification email
+- GET/PUT /api/admin/settings - Site configuration including email
