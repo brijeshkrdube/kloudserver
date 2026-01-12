@@ -30,6 +30,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminBilling from "./pages/admin/Billing";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminTicketDetails from "./pages/admin/TicketDetails";
+import AdminPlans from "./pages/admin/Plans";
 
 // Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
