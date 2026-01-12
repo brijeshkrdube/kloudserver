@@ -403,6 +403,13 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     from io import BytesIO
     import base64
     
+    # Get company settings
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    company_name = settings.get("company_name", "KloudNests") if settings else "KloudNests"
+    company_address = settings.get("contact_address", "") if settings else ""
+    company_email = settings.get("contact_email", "support@kloudnests.com") if settings else "support@kloudnests.com"
+    company_phone = settings.get("contact_phone", "") if settings else ""
+    
     # Generate PDF
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=50, bottomMargin=50)
@@ -412,8 +419,16 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=24, spaceAfter=30)
     header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=12, spaceAfter=5)
     
-    elements.append(Paragraph("<b>KloudNests</b>", title_style))
+    # Company header
+    elements.append(Paragraph(f"<b>{company_name}</b>", title_style))
+    if company_address:
+        elements.append(Paragraph(company_address, header_style))
+    if company_email:
+        elements.append(Paragraph(company_email, header_style))
+    if company_phone:
+        elements.append(Paragraph(company_phone, header_style))
     elements.append(Spacer(1, 20))
+    
     elements.append(Paragraph(f"<b>INVOICE</b>", ParagraphStyle('Invoice', fontSize=20, spaceAfter=20)))
     elements.append(Paragraph(f"<b>Invoice Number:</b> {invoice['invoice_number']}", header_style))
     elements.append(Paragraph(f"<b>Date:</b> {invoice['created_at'][:10]}", header_style))
@@ -440,6 +455,13 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
     ]))
     elements.append(table)
+    elements.append(Spacer(1, 30))
+    
+    # Payment instructions
+    elements.append(Paragraph("<b>Payment Instructions:</b>", header_style))
+    elements.append(Paragraph("Please include the invoice number in your payment reference.", styles['Normal']))
+    if company_email:
+        elements.append(Paragraph(f"Contact {company_email} for any billing questions.", styles['Normal']))
     
     doc.build(elements)
     pdf_data = buffer.getvalue()
@@ -458,10 +480,10 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     <hr>
     <p>Please complete your payment before the due date to avoid service interruption.</p>
     <p>You can view and download your invoice from your dashboard.</p>
-    <p>Best regards,<br>KloudNests Team</p>
+    <p>Best regards,<br>{company_name} Team</p>
     """
     
-    await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - KloudNests", html_content)
+    await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - {company_name}", html_content)
 
 async def check_and_create_renewal_invoices():
     """Background task: Create renewal invoices for servers nearing renewal date"""
