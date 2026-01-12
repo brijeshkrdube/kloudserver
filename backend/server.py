@@ -627,6 +627,41 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
+@orders_router.post("/{order_id}/payment-proof")
+async def upload_payment_proof(order_id: str, proof_url: str, payment_reference: Optional[str] = None, 
+                               background_tasks: BackgroundTasks = None, user: dict = Depends(get_current_user)):
+    """Upload payment proof for an order"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order["payment_status"] == "paid":
+        raise HTTPException(status_code=400, detail="Order is already paid")
+    
+    # Store payment proof
+    await db.payment_proofs.insert_one({
+        "id": str(uuid.uuid4()),
+        "order_id": order_id,
+        "user_id": user["id"],
+        "proof_url": proof_url,
+        "payment_reference": payment_reference,
+        "status": "pending_review",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Update order with payment proof reference
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "payment_proof_url": proof_url,
+            "payment_reference": payment_reference,
+            "payment_status": "pending_verification",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Payment proof uploaded successfully. Our team will verify and update your order."}
+
 # ============ SERVERS ROUTES ============
 
 @servers_router.get("/", response_model=List[ServerResponse])
