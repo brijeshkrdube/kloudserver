@@ -10,6 +10,13 @@ import PricingPage from "./pages/PricingPage";
 import ContactPage from "./pages/ContactPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import AboutPage from "./pages/AboutPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import SLAPage from "./pages/SLAPage";
+import AUPPage from "./pages/AUPPage";
+import DataCentersPage from "./pages/DataCentersPage";
+import SupportPage from "./pages/SupportPage";
 
 // User Dashboard Pages
 import UserDashboard from "./pages/user/Dashboard";
@@ -31,6 +38,7 @@ import AdminBilling from "./pages/admin/Billing";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminTicketDetails from "./pages/admin/TicketDetails";
 import AdminPlans from "./pages/admin/Plans";
+import AdminSettings from "./pages/admin/Settings";
 
 // Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
