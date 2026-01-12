@@ -51,7 +51,7 @@ SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@cloudnest.com')
 
 # Create the main app
-app = FastAPI(title="CloudNest API", version="1.0.0")
+app = FastAPI(title="KloudNests API", version="1.0.0")
 
 # Create routers
 api_router = APIRouter(prefix="/api")
@@ -412,7 +412,7 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=24, spaceAfter=30)
     header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=12, spaceAfter=5)
     
-    elements.append(Paragraph("<b>CloudNest</b>", title_style))
+    elements.append(Paragraph("<b>KloudNests</b>", title_style))
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(f"<b>INVOICE</b>", ParagraphStyle('Invoice', fontSize=20, spaceAfter=20)))
     elements.append(Paragraph(f"<b>Invoice Number:</b> {invoice['invoice_number']}", header_style))
@@ -458,10 +458,10 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     <hr>
     <p>Please complete your payment before the due date to avoid service interruption.</p>
     <p>You can view and download your invoice from your dashboard.</p>
-    <p>Best regards,<br>CloudNest Team</p>
+    <p>Best regards,<br>KloudNests Team</p>
     """
     
-    await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - CloudNest", html_content)
+    await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - KloudNests", html_content)
 
 async def check_and_create_renewal_invoices():
     """Background task: Create renewal invoices for servers nearing renewal date"""
@@ -609,12 +609,12 @@ async def register(user_data: UserCreate, background_tasks: BackgroundTasks):
     background_tasks.add_task(
         send_email,
         user_data.email,
-        "Welcome to CloudNest!",
+        "Welcome to KloudNests!",
         f"""
-        <h2>Welcome to CloudNest, {user_data.full_name}!</h2>
+        <h2>Welcome to KloudNests, {user_data.full_name}!</h2>
         <p>Your account has been created successfully.</p>
         <p>Start exploring our VPS, Shared Hosting, and Dedicated Server solutions.</p>
-        <p>Best regards,<br>CloudNest Team</p>
+        <p>Best regards,<br>KloudNests Team</p>
         """
     )
     
@@ -677,7 +677,7 @@ async def get_me(user: dict = Depends(get_current_user)):
 async def setup_2fa(user: dict = Depends(get_current_user)):
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    qr_uri = totp.provisioning_uri(name=user["email"], issuer_name="CloudNest")
+    qr_uri = totp.provisioning_uri(name=user["email"], issuer_name="KloudNests")
     
     await db.users.update_one(
         {"id": user["id"]},
@@ -735,7 +735,7 @@ async def forgot_password(data: PasswordResetRequest, background_tasks: Backgrou
         background_tasks.add_task(
             send_email,
             data.email,
-            "Password Reset - CloudNest",
+            "Password Reset - KloudNests",
             f"""
             <h2>Password Reset Request</h2>
             <p>Use this token to reset your password: <strong>{reset_token}</strong></p>
@@ -1025,7 +1025,7 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     
     # Get company settings
     settings = await db.site_settings.find_one({"_id": "site_settings"})
-    company_name = settings.get("company_name", "CloudNest") if settings else "CloudNest"
+    company_name = settings.get("company_name", "KloudNests") if settings else "KloudNests"
     company_address = settings.get("contact_address", "123 Cloud Street") if settings else "123 Cloud Street"
     company_email = settings.get("contact_email", "billing@cloudnest.com") if settings else "billing@cloudnest.com"
     
@@ -1330,7 +1330,7 @@ async def admin_create_server(data: AdminServerCreate, background_tasks: Backgro
         background_tasks.add_task(
             send_email,
             user["email"],
-            "Your Server is Ready! - CloudNest",
+            "Your Server is Ready! - KloudNests",
             f"""
             <h2>Your Server is Ready!</h2>
             <p>Great news, {user['full_name']}! Your server has been provisioned.</p>
@@ -1371,7 +1371,7 @@ async def admin_send_credentials(server_id: str, background_tasks: BackgroundTas
     background_tasks.add_task(
         send_email,
         user["email"],
-        "Your Server Credentials - CloudNest",
+        "Your Server Credentials - KloudNests",
         f"""
         <h2>Your Server Credentials</h2>
         <p>Hi {user['full_name']},</p>
@@ -1437,7 +1437,7 @@ async def admin_update_server(server_id: str, background_tasks: BackgroundTasks,
                 background_tasks.add_task(
                     send_email,
                     user["email"],
-                    "Server Credentials Updated - CloudNest",
+                    "Server Credentials Updated - KloudNests",
                     f"""
                     <h2>Your Server Credentials Have Been Updated</h2>
                     <p>Hi {user['full_name']},</p>
@@ -1527,7 +1527,7 @@ async def admin_notify_user(user_id: str, subject: str, message: str, background
         <p>Hi {user['full_name']},</p>
         <div>{message}</div>
         <hr>
-        <p>Best regards,<br>CloudNest Team</p>
+        <p>Best regards,<br>KloudNests Team</p>
         """
     )
     
@@ -1919,13 +1919,13 @@ async def get_public_settings():
     settings = await db.site_settings.find_one({"_id": "site_settings"})
     if not settings:
         return {
-            "company_name": "CloudNest",
+            "company_name": "KloudNests",
             "company_description": "Enterprise Cloud Infrastructure Provider",
             "contact_email": "support@cloudnest.com",
             "contact_phone": "+1 (555) 123-4567",
             "contact_address": "123 Cloud Street, Tech City, TC 12345",
             "skype_id": "",
-            "about_us": "CloudNest provides enterprise-grade cloud infrastructure including VPS, Shared Hosting, and Dedicated Servers.",
+            "about_us": "KloudNests provides enterprise-grade cloud infrastructure including VPS, Shared Hosting, and Dedicated Servers.",
             "terms_of_service": "",
             "privacy_policy": "",
             "sla": "",
@@ -1956,13 +1956,13 @@ async def contact_form(data: ContactRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(
         send_email,
         data.email,
-        "We received your message - CloudNest",
+        "We received your message - KloudNests",
         f"""
         <h2>Thank you for contacting us!</h2>
         <p>Hi {data.name},</p>
         <p>We have received your message and will get back to you soon.</p>
         <p><strong>Subject:</strong> {data.subject}</p>
-        <p>Best regards,<br>CloudNest Team</p>
+        <p>Best regards,<br>KloudNests Team</p>
         """
     )
     
@@ -1970,7 +1970,7 @@ async def contact_form(data: ContactRequest, background_tasks: BackgroundTasks):
 
 @api_router.get("/")
 async def root():
-    return {"message": "CloudNest API v1.0"}
+    return {"message": "KloudNests API v1.0"}
 
 @api_router.get("/health")
 async def health():
@@ -2142,7 +2142,7 @@ async def seed_data():
             "email": "brijesh.kr.dube@gmail.com",
             "password_hash": hash_password("Cloud@9874"),
             "full_name": "Brijesh Dube",
-            "company": "CloudNest",
+            "company": "KloudNests",
             "role": "super_admin",
             "wallet_balance": 0.0,
             "is_verified": True,

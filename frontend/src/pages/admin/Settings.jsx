@@ -114,7 +114,7 @@ const AdminSettings = () => {
                   <Input
                     value={settings.company_name}
                     onChange={(e) => setSettings({ ...settings, company_name: e.target.value })}
-                    placeholder="CloudNest"
+                    placeholder="KloudNests"
                     className="input-field"
                     data-testid="company-name"
                   />

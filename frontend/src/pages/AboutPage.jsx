@@ -43,7 +43,7 @@ const AboutPage = () => {
         <div className="container-main relative">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-heading text-4xl sm:text-5xl font-bold text-text-primary mb-6 tracking-tight">
-              About {settings?.company_name || 'CloudNest'}
+              About {settings?.company_name || 'KloudNests'}
             </h1>
             <p className="text-lg text-text-secondary">
               {settings?.company_description || 'Enterprise Cloud Infrastructure Provider'}
@@ -71,7 +71,7 @@ const AboutPage = () => {
             ) : (
               <div className="glass-card p-8">
                 <p className="text-text-secondary mb-4">
-                  CloudNest is a leading provider of enterprise-grade cloud infrastructure solutions. 
+                  KloudNests is a leading provider of enterprise-grade cloud infrastructure solutions. 
                   We specialize in VPS hosting, shared hosting, and dedicated server solutions designed 
                   to meet the needs of businesses of all sizes.
                 </p>

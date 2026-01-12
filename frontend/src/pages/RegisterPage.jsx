@@ -60,7 +60,7 @@ const RegisterPage = () => {
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="max-w-md">
             <h2 className="font-heading text-3xl font-bold text-text-primary mb-4">
-              Join CloudNest Today
+              Join KloudNests Today
             </h2>
             <p className="text-text-secondary mb-6">
               Get access to enterprise-grade infrastructure with NVMe storage, 
@@ -92,7 +92,7 @@ const RegisterPage = () => {
             <div className="w-10 h-10 rounded bg-primary flex items-center justify-center">
               <Server className="w-6 h-6 text-white" />
             </div>
-            <span className="font-heading font-bold text-2xl text-text-primary">CloudNest</span>
+            <span className="font-heading font-bold text-2xl text-text-primary">KloudNests</span>
           </Link>
 
           <h1 className="font-heading text-3xl font-bold text-text-primary mb-2">Create Account</h1>

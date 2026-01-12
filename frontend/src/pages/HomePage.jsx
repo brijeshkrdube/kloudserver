@@ -141,7 +141,7 @@ const HomePage = () => {
         <div className="container-main">
           <div className="text-center mb-16">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-text-primary mb-4">
-              Why Choose CloudNest?
+              Why Choose KloudNests?
             </h2>
             <p className="text-text-secondary max-w-2xl mx-auto">
               Built for performance, security, and reliability. Our infrastructure 

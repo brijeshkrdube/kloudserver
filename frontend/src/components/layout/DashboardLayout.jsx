@@ -61,7 +61,7 @@ const DashboardLayout = ({ children, isAdmin = false }) => {
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
             <Server className="w-5 h-5 text-white" />
           </div>
-          <span className="font-heading font-bold text-lg text-text-primary">CloudNest</span>
+          <span className="font-heading font-bold text-lg text-text-primary">KloudNests</span>
         </Link>
       </header>
 
@@ -76,7 +76,7 @@ const DashboardLayout = ({ children, isAdmin = false }) => {
             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
               <Server className="w-5 h-5 text-white" />
             </div>
-            <span className="font-heading font-bold text-lg text-text-primary">CloudNest</span>
+            <span className="font-heading font-bold text-lg text-text-primary">KloudNests</span>
           </Link>
         </div>
 

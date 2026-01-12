@@ -53,7 +53,7 @@ const Footer = () => {
                 <Server className="w-6 h-6 text-white" />
               </div>
               <span className="font-heading font-bold text-2xl text-text-primary">
-                {settings?.company_name || 'CloudNest'}
+                {settings?.company_name || 'KloudNests'}
               </span>
             </Link>
             <p className="text-text-secondary mb-6 max-w-sm">
@@ -142,7 +142,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-text-muted text-sm">
-            © {currentYear} {settings?.company_name || 'CloudNest'}. All rights reserved.
+            © {currentYear} {settings?.company_name || 'KloudNests'}. All rights reserved.
           </p>
           <div className="flex gap-6">
             {legal.map((item) => (

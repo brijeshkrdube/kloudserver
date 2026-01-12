@@ -36,7 +36,7 @@ const Navbar = () => {
             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
               <Server className="w-5 h-5 text-white" />
             </div>
-            <span className="font-heading font-bold text-xl text-text-primary">CloudNest</span>
+            <span className="font-heading font-bold text-xl text-text-primary">KloudNests</span>
           </Link>
 
           {/* Desktop Navigation */}
