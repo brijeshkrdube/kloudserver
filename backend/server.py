@@ -1790,6 +1790,17 @@ async def admin_update_user(user_id: str, is_verified: Optional[bool] = None, wa
 @admin_router.post("/test-email")
 async def admin_test_email(admin: dict = Depends(get_admin_user)):
     """Send a test email to verify SendGrid configuration"""
+    # Get settings to check configuration
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    api_key = settings.get("sendgrid_api_key", "") if settings else ""
+    sender_email = settings.get("sender_email", "") if settings else ""
+    
+    if not api_key:
+        raise HTTPException(status_code=400, detail="SendGrid API key not configured. Please add your API key in Settings → Email and click 'Save All Settings'.")
+    
+    if not sender_email:
+        raise HTTPException(status_code=400, detail="Sender email not configured. Please add a verified sender email in Settings → Email.")
+    
     result = await send_email(
         admin["email"],
         "Test Email - KloudNests",
@@ -1799,14 +1810,20 @@ async def admin_test_email(admin: dict = Depends(get_admin_user)):
         <p>This is a test email to verify your SendGrid configuration is working correctly.</p>
         <p>If you received this email, your email settings are properly configured!</p>
         <hr>
+        <p><strong>Configuration Details:</strong></p>
+        <ul>
+            <li>Sender: {sender_email}</li>
+            <li>Recipient: {admin['email']}</li>
+        </ul>
+        <hr>
         <p>Best regards,<br>KloudNests System</p>
         """
     )
     
     if result:
-        return {"message": f"Test email sent to {admin['email']}"}
+        return {"message": f"Test email sent to {admin['email']}! Check your inbox."}
     else:
-        raise HTTPException(status_code=500, detail="Failed to send email. Check your SendGrid API key and sender email configuration.")
+        raise HTTPException(status_code=500, detail="Failed to send email. Please verify: 1) Your SendGrid API key is valid (starts with 'SG.'), 2) Your sender email is verified in SendGrid.")
 
 @admin_router.get("/tickets")
 async def admin_get_tickets(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
