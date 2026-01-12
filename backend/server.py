@@ -216,6 +216,30 @@ class AdminOrderUpdate(BaseModel):
     order_status: Optional[str] = None
     payment_status: Optional[str] = None
 
+class AdminPlanCreate(BaseModel):
+    name: str
+    type: Literal["vps", "shared", "dedicated"]
+    cpu: str
+    ram: str
+    storage: str
+    bandwidth: str
+    price_monthly: float
+    price_quarterly: float
+    price_yearly: float
+    features: List[str]
+
+class AdminPlanUpdate(BaseModel):
+    name: Optional[str] = None
+    cpu: Optional[str] = None
+    ram: Optional[str] = None
+    storage: Optional[str] = None
+    bandwidth: Optional[str] = None
+    price_monthly: Optional[float] = None
+    price_quarterly: Optional[float] = None
+    price_yearly: Optional[float] = None
+    features: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+
 class Setup2FAResponse(BaseModel):
     secret: str
     qr_uri: str
