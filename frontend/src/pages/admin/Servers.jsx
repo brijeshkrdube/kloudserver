@@ -191,9 +191,31 @@ const AdminServers = () => {
                             </Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(server)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleEdit(server)}
+                              title="Edit server"
+                              data-testid={`edit-server-${server.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleSendCredentials(server.id)}
+                              disabled={sendingEmail === server.id}
+                              title="Send credentials to user"
+                              data-testid={`send-credentials-${server.id}`}
+                            >
+                              {sendingEmail === server.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Mail className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>
