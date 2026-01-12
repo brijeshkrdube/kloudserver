@@ -144,13 +144,13 @@ const UserTickets = () => {
                     <Label>Related Order (Optional)</Label>
                     <Select
                       value={newTicket.orderId}
-                      onValueChange={(value) => setNewTicket({ ...newTicket, orderId: value })}
+                      onValueChange={(value) => setNewTicket({ ...newTicket, orderId: value === 'none' ? '' : value })}
                     >
                       <SelectTrigger className="input-field">
                         <SelectValue placeholder="Select order" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {orders.map((order) => (
                           <SelectItem key={order.id} value={order.id}>
                             {order.plan_name} - {order.id.slice(0, 8)}
