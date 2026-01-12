@@ -641,6 +641,68 @@ async def get_server(server_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Server not found")
     return server
 
+@servers_router.post("/{server_id}/control")
+async def server_control_action(server_id: str, action_data: ServerControlAction, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
+    """Request server control action (reboot/reinstall) - Creates a support ticket"""
+    server = await db.servers.find_one({"id": server_id, "user_id": user["id"]}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    
+    if not action_data.confirm:
+        raise HTTPException(status_code=400, detail="Please confirm the action")
+    
+    # Create a support ticket for the action request
+    ticket_id = str(uuid.uuid4())
+    action_desc = "Server Reboot" if action_data.action == "reboot" else "OS Reinstall"
+    ticket_doc = {
+        "id": ticket_id,
+        "user_id": user["id"],
+        "subject": f"{action_desc} Request - {server['hostname']}",
+        "priority": "high" if action_data.action == "reinstall" else "medium",
+        "status": "open",
+        "order_id": server.get("order_id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.tickets.insert_one(ticket_doc)
+    
+    # Create ticket message
+    message = f"""
+Server Control Action Requested:
+- Action: {action_desc}
+- Server: {server['hostname']}
+- IP: {server['ip_address']}
+- OS: {server['os']}
+"""
+    if action_data.action == "reinstall":
+        message += "\nPlease reinstall the operating system. I understand all data will be lost."
+    
+    await db.ticket_messages.insert_one({
+        "id": str(uuid.uuid4()),
+        "ticket_id": ticket_id,
+        "user_id": user["id"],
+        "message": message,
+        "is_staff": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Notify admin via email
+    background_tasks.add_task(
+        send_email,
+        SENDER_EMAIL,
+        f"Server Control Request - {action_desc}",
+        f"""
+        <h2>Server Control Action Requested</h2>
+        <p><strong>Action:</strong> {action_desc}</p>
+        <p><strong>Server:</strong> {server['hostname']} ({server['ip_address']})</p>
+        <p><strong>User:</strong> {user['email']}</p>
+        <p><strong>Ticket ID:</strong> {ticket_id[:8]}</p>
+        <p>Please process this request.</p>
+        """
+    )
+    
+    return {"message": f"{action_desc} request submitted. Ticket #{ticket_id[:8]} created.", "ticket_id": ticket_id}
+
 # ============ INVOICES ROUTES ============
 
 @invoices_router.get("/", response_model=List[InvoiceResponse])
