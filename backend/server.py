@@ -881,6 +881,46 @@ async def admin_get_servers(admin: dict = Depends(get_admin_user)):
     servers = await db.servers.find({}, {"_id": 0}).to_list(500)
     return servers
 
+@admin_router.post("/servers/{server_id}/send-credentials")
+async def admin_send_credentials(server_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Resend server credentials email to user"""
+    server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    
+    user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    background_tasks.add_task(
+        send_email,
+        user["email"],
+        "Your Server Credentials - CloudNest",
+        f"""
+        <h2>Your Server Credentials</h2>
+        <p>Hi {user['full_name']},</p>
+        <p>Here are the credentials for your server as requested.</p>
+        <hr>
+        <p><strong>Server Details:</strong></p>
+        <ul>
+            <li><strong>Hostname:</strong> {server['hostname']}</li>
+            <li><strong>IP Address:</strong> {server['ip_address']}</li>
+            <li><strong>Username:</strong> {server['username']}</li>
+            <li><strong>Password:</strong> {server['password']}</li>
+            <li><strong>SSH Port:</strong> {server['ssh_port']}</li>
+            {f"<li><strong>Panel URL:</strong> {server['panel_url']}</li>" if server.get('panel_url') else ''}
+        </ul>
+        <hr>
+        <p><strong>SSH Command:</strong></p>
+        <code>ssh {server['username']}@{server['ip_address']} -p {server['ssh_port']}</code>
+        <hr>
+        <p>You can also view your server details anytime in your dashboard.</p>
+        <p><strong>Important:</strong> Keep these credentials secure and change your password regularly.</p>
+        """
+    )
+    
+    return {"message": f"Credentials email sent to {user['email']}"}
+
 @admin_router.put("/servers/{server_id}")
 async def admin_update_server(server_id: str, background_tasks: BackgroundTasks, ip_address: Optional[str] = None, hostname: Optional[str] = None, 
                                username: Optional[str] = None, password: Optional[str] = None,
