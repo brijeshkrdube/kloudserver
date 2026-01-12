@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Package, Check, X, Loader2, Server } from 'lucide-react';
+import { Package, Check, X, Loader2, Server, User, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -138,6 +139,7 @@ const AdminOrders = () => {
                 <thead>
                   <tr className="border-b border-white/5">
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Order ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Customer</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Plan</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Payment</th>
@@ -150,6 +152,27 @@ const AdminOrders = () => {
                   {orders.map((order) => (
                     <tr key={order.id} className="hover:bg-white/5" data-testid={`admin-order-${order.id}`}>
                       <td className="px-6 py-4 font-mono text-sm text-text-primary">{order.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-text-primary text-sm font-medium">{order.user_name || 'Unknown'}</p>
+                            <p className="text-text-muted text-xs">{order.user_email || 'No email'}</p>
+                            {order.user_company && (
+                              <p className="text-text-muted text-xs">{order.user_company}</p>
+                            )}
+                          </div>
+                          <Link 
+                            to={`/admin/users/${order.user_id}`}
+                            className="ml-1 p-1 rounded hover:bg-white/10 transition-colors"
+                            title="View user details"
+                          >
+                            <Eye className="w-3 h-3 text-primary" />
+                          </Link>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-text-primary">{order.plan_name}</p>
@@ -167,6 +190,7 @@ const AdminOrders = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="pending_verification">Verifying</SelectItem>
                             <SelectItem value="paid">Paid</SelectItem>
                             <SelectItem value="failed">Failed</SelectItem>
                           </SelectContent>
@@ -203,6 +227,16 @@ const AdminOrders = () => {
                             Provision
                           </Button>
                         )}
+                        {order.payment_proof_url && (
+                          <a 
+                            href={order.payment_proof_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary text-xs hover:underline ml-2"
+                          >
+                            View Proof
+                          </a>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -222,6 +256,7 @@ const AdminOrders = () => {
               <div className="space-y-4 mt-4">
                 <div className="p-4 bg-white/5 rounded-lg">
                   <p className="text-text-muted text-sm">Order: <span className="text-text-primary font-mono">{selectedOrder.id.slice(0, 8)}</span></p>
+                  <p className="text-text-muted text-sm">Customer: <span className="text-text-primary">{selectedOrder.user_name} ({selectedOrder.user_email})</span></p>
                   <p className="text-text-muted text-sm">Plan: <span className="text-text-primary">{selectedOrder.plan_name}</span></p>
                   <p className="text-text-muted text-sm">OS: <span className="text-text-primary">{selectedOrder.os}</span></p>
                 </div>
