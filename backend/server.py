@@ -1119,7 +1119,8 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     # Payment instructions
     elements.append(Paragraph("<b>Payment Instructions:</b>", header_style))
     elements.append(Paragraph("Please include the invoice number in your payment reference.", styles['Normal']))
-    elements.append(Paragraph("Contact support@kloudnests.com for any billing questions.", styles['Normal']))
+    if company_email:
+        elements.append(Paragraph(f"Contact {company_email} for any billing questions.", styles['Normal']))
     
     doc.build(elements)
     buffer.seek(0)
