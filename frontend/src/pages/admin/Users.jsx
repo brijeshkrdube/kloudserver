@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Users, Edit, Wallet, Check, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, Edit, Save, X, Loader2, Eye } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Label } from '../../components/ui/label';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { toast } from 'sonner';
@@ -13,9 +12,8 @@ const AdminUsers = () => {
   const { api } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [walletOpen, setWalletOpen] = useState(false);
-  const [newBalance, setNewBalance] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({ wallet_balance: 0 });
 
   useEffect(() => {
     fetchUsers();
@@ -32,33 +30,21 @@ const AdminUsers = () => {
     }
   };
 
-  const handleUpdateUser = async (userId, updates) => {
+  const handleEdit = (user) => {
+    setEditingId(user.id);
+    setEditData({ wallet_balance: user.wallet_balance || 0 });
+  };
+
+  const handleSave = async (userId) => {
     try {
-      await api.put(`/admin/users/${userId}`, null, { params: updates });
+      await api.put(`/admin/users/${userId}`, null, { 
+        params: { wallet_balance: parseFloat(editData.wallet_balance) }
+      });
       toast.success('User updated successfully');
+      setEditingId(null);
       fetchUsers();
     } catch (error) {
       toast.error('Failed to update user');
-    }
-  };
-
-  const handleUpdateWallet = async () => {
-    if (!newBalance || isNaN(parseFloat(newBalance))) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    try {
-      await api.put(`/admin/users/${selectedUser.id}`, null, {
-        params: { wallet_balance: parseFloat(newBalance) }
-      });
-      toast.success('Wallet balance updated');
-      setWalletOpen(false);
-      setSelectedUser(null);
-      setNewBalance('');
-      fetchUsers();
-    } catch (error) {
-      toast.error('Failed to update wallet');
     }
   };
 
@@ -80,15 +66,15 @@ const AdminUsers = () => {
           <h1 className="font-heading text-3xl font-bold text-text-primary" data-testid="admin-users-title">
             User Management
           </h1>
-          <p className="text-text-secondary mt-1">Manage registered users</p>
+          <p className="text-text-secondary mt-1">View and manage registered users</p>
         </div>
 
         {/* Users Table */}
         {users.length === 0 ? (
           <div className="glass-card p-12 text-center">
             <Users className="w-16 h-16 text-text-muted mx-auto mb-4" />
-            <h2 className="font-heading text-xl font-semibold text-text-primary mb-2">No Users Yet</h2>
-            <p className="text-text-secondary">Users will appear here once they register.</p>
+            <h2 className="font-heading text-xl font-semibold text-text-primary mb-2">No Users Found</h2>
+            <p className="text-text-secondary">No users have registered yet.</p>
           </div>
         ) : (
           <div className="glass-card overflow-hidden">
@@ -97,11 +83,11 @@ const AdminUsers = () => {
                 <thead>
                   <tr className="border-b border-white/5">
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">User</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Email</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Wallet</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Verified</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Status</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">2FA</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Joined</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Registered</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -109,43 +95,82 @@ const AdminUsers = () => {
                   {users.map((user) => (
                     <tr key={user.id} className="hover:bg-white/5" data-testid={`admin-user-${user.id}`}>
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="text-text-primary font-medium">{user.full_name}</p>
-                          <p className="text-text-muted text-sm">{user.email}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="text-primary font-semibold">{user.full_name?.charAt(0) || 'U'}</span>
+                          </div>
+                          <div>
+                            <p className="text-text-primary font-medium">{user.full_name}</p>
+                            {user.company && <p className="text-text-muted text-xs">{user.company}</p>}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-text-secondary">{user.company || '-'}</td>
-                      <td className="px-6 py-4 font-mono text-text-primary">{formatCurrency(user.wallet_balance)}</td>
+                      <td className="px-6 py-4 text-text-secondary">{user.email}</td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleUpdateUser(user.id, { is_verified: !user.is_verified })}
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            user.is_verified ? 'text-accent-success bg-accent-success/10' : 'text-accent-warning bg-accent-warning/10'
-                          }`}
-                        >
-                          {user.is_verified ? 'Yes' : 'No'}
-                        </button>
+                        {editingId === user.id ? (
+                          <Input
+                            type="number"
+                            value={editData.wallet_balance}
+                            onChange={(e) => setEditData({ wallet_balance: e.target.value })}
+                            className="input-field w-28 h-8 font-mono"
+                            step="0.01"
+                          />
+                        ) : (
+                          <span className="font-mono text-text-primary">{formatCurrency(user.wallet_balance || 0)}</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          user.is_2fa_enabled ? 'text-accent-success bg-accent-success/10' : 'text-text-muted bg-text-muted/10'
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          user.is_active 
+                            ? 'bg-accent-success/20 text-accent-success' 
+                            : 'bg-accent-error/20 text-accent-error'
                         }`}>
-                          {user.is_2fa_enabled ? 'Enabled' : 'Disabled'}
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          user.totp_enabled 
+                            ? 'bg-primary/20 text-primary' 
+                            : 'bg-white/5 text-text-muted'
+                        }`}>
+                          {user.totp_enabled ? 'Enabled' : 'Disabled'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-text-muted text-sm">{formatDate(user.created_at)}</td>
                       <td className="px-6 py-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setNewBalance(user.wallet_balance.toString());
-                            setWalletOpen(true);
-                          }}
-                        >
-                          <Wallet className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {editingId === user.id ? (
+                            <>
+                              <Button size="sm" className="btn-primary text-xs h-8" onClick={() => handleSave(user.id)}>
+                                <Save className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingId(null)}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Link
+                                to={`/admin/users/${user.id}`}
+                                className="p-2 hover:bg-white/10 rounded transition-colors"
+                                title="View user details"
+                                data-testid={`view-user-${user.id}`}
+                              >
+                                <Eye className="w-4 h-4 text-primary" />
+                              </Link>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8"
+                                onClick={() => handleEdit(user)}
+                                title="Edit wallet balance"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -154,37 +179,6 @@ const AdminUsers = () => {
             </div>
           </div>
         )}
-
-        {/* Update Wallet Dialog */}
-        <Dialog open={walletOpen} onOpenChange={setWalletOpen}>
-          <DialogContent className="bg-background-paper border-white/10">
-            <DialogHeader>
-              <DialogTitle className="font-heading text-xl">Update Wallet Balance</DialogTitle>
-            </DialogHeader>
-            {selectedUser && (
-              <div className="space-y-4 mt-4">
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <p className="text-text-muted text-sm">User: <span className="text-text-primary">{selectedUser.full_name}</span></p>
-                  <p className="text-text-muted text-sm">Current Balance: <span className="text-text-primary font-mono">{formatCurrency(selectedUser.wallet_balance)}</span></p>
-                </div>
-                <div className="space-y-2">
-                  <Label>New Balance (USD)</Label>
-                  <Input
-                    type="number"
-                    value={newBalance}
-                    onChange={(e) => setNewBalance(e.target.value)}
-                    className="input-field font-mono"
-                    step="0.01"
-                    data-testid="new-balance"
-                  />
-                </div>
-                <Button className="w-full btn-primary" onClick={handleUpdateWallet} data-testid="update-balance">
-                  Update Balance
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );
