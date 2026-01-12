@@ -967,13 +967,29 @@ async def admin_dashboard(admin: dict = Depends(get_admin_user)):
         "total_revenue": total_revenue
     }
 
-@admin_router.get("/orders", response_model=List[OrderResponse])
+@admin_router.get("/orders")
 async def admin_get_orders(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
+    """Get all orders with user details"""
     query = {}
     if status:
         query["order_status"] = status
     orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return orders
+    
+    # Enrich orders with user details
+    user_ids = list(set(order["user_id"] for order in orders))
+    users = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "password_hash": 0, "totp_secret": 0}).to_list(500)
+    user_map = {u["id"]: u for u in users}
+    
+    enriched_orders = []
+    for order in orders:
+        order_data = dict(order)
+        user = user_map.get(order["user_id"], {})
+        order_data["user_email"] = user.get("email", "Unknown")
+        order_data["user_name"] = user.get("full_name", "Unknown")
+        order_data["user_company"] = user.get("company", "")
+        enriched_orders.append(order_data)
+    
+    return enriched_orders
 
 @admin_router.put("/orders/{order_id}")
 async def admin_update_order(order_id: str, data: AdminOrderUpdate, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
