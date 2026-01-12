@@ -23,7 +23,7 @@ const UserOrderServer = () => {
     planId: '',
     billingCycle: 'monthly',
     os: 'Ubuntu 22.04',
-    controlPanel: '',
+    controlPanel: 'none',
     paymentMethod: 'bank_transfer',
     notes: '',
   });
