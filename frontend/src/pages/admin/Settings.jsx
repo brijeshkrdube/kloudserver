@@ -314,15 +314,39 @@ const AdminSettings = () => {
                 </div>
               </div>
 
+              <div className="flex items-center gap-4 pt-4 border-t border-white/5">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await api.post('/admin/test-email');
+                      toast.success(response.data.message);
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || 'Failed to send test email');
+                    }
+                  }}
+                  className="border-primary/30 text-primary hover:bg-primary/10"
+                  data-testid="test-email-btn"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Test Email
+                </Button>
+                <p className="text-text-muted text-sm">
+                  Sends a test email to your admin email address
+                </p>
+              </div>
+
               <div className="p-4 bg-white/5 rounded-lg">
                 <h3 className="text-text-primary font-medium mb-2">Email notifications are sent for:</h3>
                 <ul className="text-text-secondary text-sm space-y-1">
                   <li>• New user registration</li>
-                  <li>• Order confirmation</li>
+                  <li>• Order confirmation with PDF invoice</li>
                   <li>• Server provisioning (credentials)</li>
                   <li>• Credential updates</li>
                   <li>• Password reset</li>
                   <li>• Support ticket updates</li>
+                  <li>• Service suspension notices</li>
+                  <li>• Renewal invoices</li>
                 </ul>
               </div>
             </div>
