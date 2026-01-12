@@ -42,7 +42,7 @@ const UserOrderServer = () => {
   ];
 
   const controlPanels = [
-    { value: '', label: 'None' },
+    { value: 'none', label: 'None' },
     { value: 'cpanel', label: 'cPanel' },
     { value: 'whm', label: 'WHM' },
     { value: 'plesk', label: 'Plesk' },
