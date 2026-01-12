@@ -94,6 +94,7 @@ const AdminSettings = () => {
           <TabsList className="bg-background-paper border border-white/5 mb-6 flex-wrap h-auto p-1">
             <TabsTrigger value="company">Company</TabsTrigger>
             <TabsTrigger value="contact">Contact & Support</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="pages">Pages</TabsTrigger>
             <TabsTrigger value="payment">Payment</TabsTrigger>
             <TabsTrigger value="social">Social</TabsTrigger>
