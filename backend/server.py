@@ -1,7 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -19,6 +21,20 @@ from sendgrid.helpers.mail import Mail
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Middleware to fix HTTPS redirects
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if response.status_code == 307 and 'location' in response.headers:
+            location = response.headers['location']
+            if location.startswith('http://'):
+                # Check if original request was HTTPS (via X-Forwarded-Proto header)
+                forwarded_proto = request.headers.get('x-forwarded-proto', 'http')
+                if forwarded_proto == 'https':
+                    new_location = location.replace('http://', 'https://', 1)
+                    return RedirectResponse(url=new_location, status_code=307)
+        return response
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
