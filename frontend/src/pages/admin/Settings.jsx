@@ -273,6 +273,61 @@ const AdminSettings = () => {
             </div>
           </TabsContent>
 
+          {/* Email Settings */}
+          <TabsContent value="email">
+            <div className="glass-card p-6 space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Send className="w-6 h-6 text-primary" />
+                <h2 className="font-heading text-xl font-semibold text-text-primary">Email Configuration</h2>
+              </div>
+              
+              <div className="p-4 bg-accent-warning/10 border border-accent-warning/20 rounded-lg mb-6">
+                <p className="text-accent-warning text-sm">
+                  <strong>Note:</strong> Configure SendGrid to enable email notifications for orders, credentials, and support.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>SendGrid API Key</Label>
+                  <Input
+                    type="password"
+                    value={settings.sendgrid_api_key}
+                    onChange={(e) => setSettings({ ...settings, sendgrid_api_key: e.target.value })}
+                    placeholder="SG.xxxxxxxxxxxx"
+                    className="input-field font-mono"
+                    data-testid="sendgrid-api-key"
+                  />
+                  <p className="text-text-muted text-xs">Get your API key from <a href="https://sendgrid.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sendgrid.com</a></p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Sender Email</Label>
+                  <Input
+                    type="email"
+                    value={settings.sender_email}
+                    onChange={(e) => setSettings({ ...settings, sender_email: e.target.value })}
+                    placeholder="noreply@yourdomain.com"
+                    className="input-field"
+                    data-testid="sender-email"
+                  />
+                  <p className="text-text-muted text-xs">Must be verified in SendGrid</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-lg">
+                <h3 className="text-text-primary font-medium mb-2">Email notifications are sent for:</h3>
+                <ul className="text-text-secondary text-sm space-y-1">
+                  <li>• New user registration</li>
+                  <li>• Order confirmation</li>
+                  <li>• Server provisioning (credentials)</li>
+                  <li>• Credential updates</li>
+                  <li>• Password reset</li>
+                  <li>• Support ticket updates</li>
+                </ul>
+              </div>
+            </div>
+          </TabsContent>
+
           {/* Payment Info */}
           <TabsContent value="payment">
             <div className="glass-card p-6 space-y-6">
