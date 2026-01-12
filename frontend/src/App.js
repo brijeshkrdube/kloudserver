@@ -45,6 +45,7 @@ import AdminPlans from "./pages/admin/Plans";
 import AdminSettings from "./pages/admin/Settings";
 import AdminDataCenters from "./pages/admin/DataCenters";
 import AdminAddOns from "./pages/admin/AddOns";
+import AdminAutomation from "./pages/admin/Automation";
 
 // Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
