@@ -1048,8 +1048,9 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     # Get company settings
     settings = await db.site_settings.find_one({"_id": "site_settings"})
     company_name = settings.get("company_name", "KloudNests") if settings else "KloudNests"
-    company_address = settings.get("contact_address", "123 Cloud Street") if settings else "123 Cloud Street"
+    company_address = settings.get("contact_address", "") if settings else ""
     company_email = settings.get("contact_email", "billing@kloudnests.com") if settings else "billing@kloudnests.com"
+    company_phone = settings.get("contact_phone", "") if settings else ""
     
     # Get user info
     user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
@@ -1065,8 +1066,12 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     
     # Header
     elements.append(Paragraph(f"<b>{company_name}</b>", title_style))
-    elements.append(Paragraph(company_address, header_style))
-    elements.append(Paragraph(company_email, header_style))
+    if company_address:
+        elements.append(Paragraph(company_address, header_style))
+    if company_email:
+        elements.append(Paragraph(company_email, header_style))
+    if company_phone:
+        elements.append(Paragraph(company_phone, header_style))
     elements.append(Spacer(1, 30))
     
     # Invoice details
