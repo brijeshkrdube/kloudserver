@@ -258,6 +258,9 @@ class SiteSettingsUpdate(BaseModel):
     social_twitter: Optional[str] = None
     social_linkedin: Optional[str] = None
     social_github: Optional[str] = None
+    # Email settings
+    sendgrid_api_key: Optional[str] = None
+    sender_email: Optional[str] = None
 
 class Setup2FAResponse(BaseModel):
     secret: str
