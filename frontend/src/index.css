@@ -42,7 +42,11 @@
     }
     
     html {
-        @apply dark;
+        @apply bg-background text-foreground;
+    }
+    
+    html.dark {
+        color-scheme: dark;
     }
     
     body {
