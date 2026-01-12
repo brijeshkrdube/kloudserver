@@ -130,6 +130,8 @@ function App() {
           <Route path="/admin/tickets" element={<ProtectedRoute adminOnly><AdminTickets /></ProtectedRoute>} />
           <Route path="/admin/tickets/:ticketId" element={<ProtectedRoute adminOnly><AdminTicketDetails /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+          <Route path="/admin/datacenters" element={<ProtectedRoute adminOnly><AdminDataCenters /></ProtectedRoute>} />
+          <Route path="/admin/addons" element={<ProtectedRoute adminOnly><AdminAddOns /></ProtectedRoute>} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
