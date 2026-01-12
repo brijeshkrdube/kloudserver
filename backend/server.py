@@ -1660,6 +1660,59 @@ async def admin_delete_addon(addon_id: str, admin: dict = Depends(get_admin_user
         raise HTTPException(status_code=404, detail="Add-on not found")
     return {"message": "Add-on deleted"}
 
+# ============ ADMIN AUTOMATION ROUTES ============
+
+@admin_router.post("/run-renewal-check")
+async def admin_run_renewal_check(background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Admin: Manually trigger renewal invoice generation"""
+    background_tasks.add_task(check_and_create_renewal_invoices)
+    return {"message": "Renewal check started in background"}
+
+@admin_router.post("/run-suspend-check")
+async def admin_run_suspend_check(background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Admin: Manually trigger overdue service suspension"""
+    background_tasks.add_task(check_and_suspend_overdue_services)
+    return {"message": "Suspension check started in background"}
+
+@admin_router.post("/servers/{server_id}/unsuspend")
+async def admin_unsuspend_server(server_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Admin: Unsuspend a server (after payment received)"""
+    server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    
+    if server["status"] != "suspended":
+        raise HTTPException(status_code=400, detail="Server is not suspended")
+    
+    # Calculate new renewal date based on billing cycle
+    order = await db.orders.find_one({"id": server["order_id"]}, {"_id": 0})
+    cycle_days = {"monthly": 30, "quarterly": 90, "yearly": 365}
+    days = cycle_days.get(order["billing_cycle"], 30)
+    new_renewal_date = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+    
+    await db.servers.update_one(
+        {"id": server_id},
+        {"$set": {"status": "active", "renewal_date": new_renewal_date}, "$unset": {"suspended_at": ""}}
+    )
+    
+    # Notify user
+    user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+    if user:
+        background_tasks.add_task(
+            send_email,
+            user["email"],
+            f"Service Restored - {server['hostname']}",
+            f"""
+            <h2>Service Restored!</h2>
+            <p>Hi {user.get('full_name', 'Customer')},</p>
+            <p>Great news! Your server <strong>{server['hostname']}</strong> has been restored.</p>
+            <p><strong>New Renewal Date:</strong> {new_renewal_date[:10]}</p>
+            <p>Thank you for your payment. Your service is now active again.</p>
+            """
+        )
+    
+    return {"message": f"Server {server['hostname']} has been unsuspended"}
+
 @admin_router.put("/users/{user_id}")
 async def admin_update_user(user_id: str, is_verified: Optional[bool] = None, wallet_balance: Optional[float] = None,
                             admin: dict = Depends(get_admin_user)):
