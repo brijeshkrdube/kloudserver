@@ -118,6 +118,7 @@ class OrderCreate(BaseModel):
     billing_cycle: Literal["monthly", "quarterly", "yearly"]
     os: str
     control_panel: Optional[str] = None
+    data_center_id: Optional[str] = None
     addons: Optional[List[str]] = []
     payment_method: Literal["bank_transfer", "crypto"]
     notes: Optional[str] = None
@@ -131,7 +132,10 @@ class OrderResponse(BaseModel):
     billing_cycle: str
     os: str
     control_panel: Optional[str]
+    data_center_id: Optional[str] = None
+    data_center_name: Optional[str] = None
     addons: List[str]
+    addon_details: Optional[List[dict]] = []
     amount: float
     payment_method: str
     payment_status: str
