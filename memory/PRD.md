@@ -94,8 +94,8 @@ Build a complete, production-ready web application for a server renting company 
 - Mobile app considerations
 
 ## Admin Credentials
-- Email: admin@cloudnest.com
-- Password: Admin@123
+- Email: brijesh.kr.dube@gmail.com
+- Password: Cloud@9874
 
 ## Notes
 - SendGrid email integration is **MOCKED** (will log warning if API key not configured)
