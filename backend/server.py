@@ -1321,6 +1321,133 @@ async def admin_notify_user(user_id: str, subject: str, message: str, background
     
     return {"message": f"Notification sent to {user['email']}"}
 
+# ============ DATA CENTERS ROUTES ============
+
+@datacenters_router.get("/", response_model=List[DataCenterResponse])
+async def get_datacenters():
+    """Get all active data centers"""
+    datacenters = await db.datacenters.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return datacenters
+
+@admin_router.get("/datacenters")
+async def admin_get_datacenters(admin: dict = Depends(get_admin_user)):
+    """Admin: Get all data centers including inactive"""
+    datacenters = await db.datacenters.find({}, {"_id": 0}).to_list(100)
+    return datacenters
+
+@admin_router.post("/datacenters")
+async def admin_create_datacenter(data: DataCenterCreate, admin: dict = Depends(get_admin_user)):
+    """Admin: Create a new data center"""
+    datacenter_id = str(uuid.uuid4())
+    datacenter_doc = {
+        "id": datacenter_id,
+        "name": data.name,
+        "location": data.location,
+        "country": data.country,
+        "description": data.description,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.datacenters.insert_one(datacenter_doc)
+    return {"message": "Data center created", "id": datacenter_id}
+
+@admin_router.put("/datacenters/{datacenter_id}")
+async def admin_update_datacenter(datacenter_id: str, name: Optional[str] = None, location: Optional[str] = None,
+                                  country: Optional[str] = None, description: Optional[str] = None,
+                                  is_active: Optional[bool] = None, admin: dict = Depends(get_admin_user)):
+    """Admin: Update a data center"""
+    datacenter = await db.datacenters.find_one({"id": datacenter_id}, {"_id": 0})
+    if not datacenter:
+        raise HTTPException(status_code=404, detail="Data center not found")
+    
+    updates = {}
+    if name is not None:
+        updates["name"] = name
+    if location is not None:
+        updates["location"] = location
+    if country is not None:
+        updates["country"] = country
+    if description is not None:
+        updates["description"] = description
+    if is_active is not None:
+        updates["is_active"] = is_active
+    
+    if updates:
+        await db.datacenters.update_one({"id": datacenter_id}, {"$set": updates})
+    
+    return {"message": "Data center updated"}
+
+@admin_router.delete("/datacenters/{datacenter_id}")
+async def admin_delete_datacenter(datacenter_id: str, admin: dict = Depends(get_admin_user)):
+    """Admin: Delete a data center (soft delete)"""
+    result = await db.datacenters.update_one({"id": datacenter_id}, {"$set": {"is_active": False}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Data center not found")
+    return {"message": "Data center deleted"}
+
+# ============ ADD-ONS ROUTES ============
+
+@addons_router.get("/", response_model=List[AddOnResponse])
+async def get_addons():
+    """Get all active add-ons"""
+    addons = await db.addons.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return addons
+
+@admin_router.get("/addons")
+async def admin_get_addons(admin: dict = Depends(get_admin_user)):
+    """Admin: Get all add-ons including inactive"""
+    addons = await db.addons.find({}, {"_id": 0}).to_list(100)
+    return addons
+
+@admin_router.post("/addons")
+async def admin_create_addon(data: AddOnCreate, admin: dict = Depends(get_admin_user)):
+    """Admin: Create a new add-on"""
+    addon_id = str(uuid.uuid4())
+    addon_doc = {
+        "id": addon_id,
+        "name": data.name,
+        "type": data.type,
+        "price": data.price,
+        "billing_cycle": data.billing_cycle,
+        "description": data.description,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.addons.insert_one(addon_doc)
+    return {"message": "Add-on created", "id": addon_id}
+
+@admin_router.put("/addons/{addon_id}")
+async def admin_update_addon(addon_id: str, name: Optional[str] = None, price: Optional[float] = None,
+                             description: Optional[str] = None, is_active: Optional[bool] = None,
+                             admin: dict = Depends(get_admin_user)):
+    """Admin: Update an add-on"""
+    addon = await db.addons.find_one({"id": addon_id}, {"_id": 0})
+    if not addon:
+        raise HTTPException(status_code=404, detail="Add-on not found")
+    
+    updates = {}
+    if name is not None:
+        updates["name"] = name
+    if price is not None:
+        updates["price"] = price
+    if description is not None:
+        updates["description"] = description
+    if is_active is not None:
+        updates["is_active"] = is_active
+    
+    if updates:
+        await db.addons.update_one({"id": addon_id}, {"$set": updates})
+    
+    return {"message": "Add-on updated"}
+
+@admin_router.delete("/addons/{addon_id}")
+async def admin_delete_addon(addon_id: str, admin: dict = Depends(get_admin_user)):
+    """Admin: Delete an add-on (soft delete)"""
+    result = await db.addons.update_one({"id": addon_id}, {"$set": {"is_active": False}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Add-on not found")
+    return {"message": "Add-on deleted"}
+
 @admin_router.put("/users/{user_id}")
 async def admin_update_user(user_id: str, is_verified: Optional[bool] = None, wallet_balance: Optional[float] = None,
                             admin: dict = Depends(get_admin_user)):
