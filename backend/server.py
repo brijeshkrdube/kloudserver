@@ -157,10 +157,13 @@ class ServerResponse(BaseModel):
     os: str
     control_panel: Optional[str]
     panel_url: Optional[str]
+    data_center_id: Optional[str] = None
+    data_center_name: Optional[str] = None
     status: str
     plan_name: str
     renewal_date: str
     created_at: str
+    specs: Optional[dict] = None
 
 class InvoiceResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
