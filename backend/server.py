@@ -42,13 +42,13 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Config - Use stable secret
-JWT_SECRET = os.environ.get('JWT_SECRET', 'cloudnest-secure-jwt-secret-key-2024')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'kloudnests-secure-jwt-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
 # SendGrid Config
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@cloudnest.com')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@kloudnests.com')
 
 # Create the main app
 app = FastAPI(title="KloudNests API", version="1.0.0")
@@ -1027,7 +1027,7 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     settings = await db.site_settings.find_one({"_id": "site_settings"})
     company_name = settings.get("company_name", "KloudNests") if settings else "KloudNests"
     company_address = settings.get("contact_address", "123 Cloud Street") if settings else "123 Cloud Street"
-    company_email = settings.get("contact_email", "billing@cloudnest.com") if settings else "billing@cloudnest.com"
+    company_email = settings.get("contact_email", "billing@kloudnests.com") if settings else "billing@kloudnests.com"
     
     # Get user info
     user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
@@ -1092,7 +1092,7 @@ async def download_invoice_pdf(invoice_id: str, user: dict = Depends(get_current
     # Payment instructions
     elements.append(Paragraph("<b>Payment Instructions:</b>", header_style))
     elements.append(Paragraph("Please include the invoice number in your payment reference.", styles['Normal']))
-    elements.append(Paragraph("Contact support@cloudnest.com for any billing questions.", styles['Normal']))
+    elements.append(Paragraph("Contact support@kloudnests.com for any billing questions.", styles['Normal']))
     
     doc.build(elements)
     buffer.seek(0)
@@ -1921,7 +1921,7 @@ async def get_public_settings():
         return {
             "company_name": "KloudNests",
             "company_description": "Enterprise Cloud Infrastructure Provider",
-            "contact_email": "support@cloudnest.com",
+            "contact_email": "support@kloudnests.com",
             "contact_phone": "+1 (555) 123-4567",
             "contact_address": "123 Cloud Street, Tech City, TC 12345",
             "skype_id": "",

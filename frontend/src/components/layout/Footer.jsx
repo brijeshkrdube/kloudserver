@@ -125,7 +125,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-text-secondary">
                 <Mail className="w-4 h-4 text-primary" />
-                {settings?.contact_email || 'support@cloudnest.com'}
+                {settings?.contact_email || 'support@kloudnests.com'}
               </li>
               <li className="flex items-center gap-2 text-text-secondary">
                 <Phone className="w-4 h-4 text-primary" />

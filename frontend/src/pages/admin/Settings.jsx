@@ -169,7 +169,7 @@ const AdminSettings = () => {
                   <Input
                     value={settings.contact_email}
                     onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
-                    placeholder="support@cloudnest.com"
+                    placeholder="support@kloudnests.com"
                     className="input-field"
                     data-testid="contact-email"
                   />

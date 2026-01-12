@@ -36,7 +36,7 @@ const ContactPage = () => {
   };
 
   const contactInfo = [
-    { icon: Mail, label: 'Email', value: 'support@cloudnest.com' },
+    { icon: Mail, label: 'Email', value: 'support@kloudnests.com' },
     { icon: Phone, label: 'Phone', value: '+1 (555) 123-4567' },
     { icon: MapPin, label: 'Address', value: '123 Cloud Street, Tech City, TC 12345' },
   ];

@@ -126,7 +126,7 @@ const SupportPage = () => {
                   </div>
                   <div>
                     <p className="text-text-muted text-sm">Email</p>
-                    <p className="text-text-primary">{settings?.contact_email || 'support@cloudnest.com'}</p>
+                    <p className="text-text-primary">{settings?.contact_email || 'support@kloudnests.com'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">

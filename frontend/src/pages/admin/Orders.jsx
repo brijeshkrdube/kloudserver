@@ -275,7 +275,7 @@ const AdminOrders = () => {
                   <div className="space-y-2">
                     <Label>Hostname *</Label>
                     <Input
-                      placeholder="server1.cloudnest.com"
+                      placeholder="server1.kloudnests.com"
                       value={serverData.hostname}
                       onChange={(e) => setServerData({ ...serverData, hostname: e.target.value })}
                       className="input-field"
