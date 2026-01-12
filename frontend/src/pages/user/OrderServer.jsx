@@ -85,11 +85,11 @@ const UserOrderServer = () => {
 
     setSubmitting(true);
     try {
-      await api.post('/orders', {
+      await api.post('/orders/', {
         plan_id: orderData.planId,
         billing_cycle: orderData.billingCycle,
         os: orderData.os,
-        control_panel: orderData.controlPanel || null,
+        control_panel: orderData.controlPanel === 'none' ? null : orderData.controlPanel,
         addons: [],
         payment_method: orderData.paymentMethod,
         notes: orderData.notes || null,
