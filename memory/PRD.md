@@ -17,98 +17,110 @@ Build a complete, production-ready web application for a server renting company 
 - **Email**: SendGrid integration (configurable via admin settings)
 - **PDF Generation**: ReportLab for invoice PDFs
 
-## Core Requirements (Implemented)
-
-### Public Website
-- Home, VPS, Shared Hosting, Dedicated Servers, Pricing pages
-- Contact form with email confirmation
-- User registration/login with 2FA support
-- About Us, Terms, Privacy, SLA, AUP, Data Centers pages (admin-managed)
-- Support Center page (Skype + Ticketing)
-- Password reset flow (forgot password + reset password pages)
-
-### User Dashboard
-- Dashboard overview with stats
-- My Services (active servers list)
-- Server details with credentials (plain text + copy buttons)
-- **Server control actions** (Request Reboot, Request OS Reinstall - creates support tickets)
-- Order new server wizard (3-step process)
-- **Order details with payment proof upload**
-- Billing & invoices with **PDF download**
-- Wallet with transaction history
-- Support ticket system with messaging
-- Profile & security (2FA setup/disable)
-
-### Admin Panel
-- Dashboard with key metrics
-- **Order management with user details** (name, email, company displayed)
-- Server provisioning and credential management (edit + send email)
-- **User management with detailed view** (orders, invoices, servers, tickets, transactions)
-- **Send notification to users via email**
-- Billing/invoice management
-- Support ticket management
-- Plan management (CRUD)
-- **Site Settings with Email configuration** (SendGrid API key, sender email)
-
 ## What's Been Implemented
 
-### January 12, 2026 - Session 2
-1. **BUG FIX (P0)**: Fixed order page crash
-2. Admin-managed site settings with 6 tabs (Company, Contact, Email, Pages, Payment, Social)
-3. New static pages (About, Terms, Privacy, SLA, AUP, Data Centers, Support)
-4. Footer updated with links, watermark reference removed
-5. Admin credential sharing with email notifications
+### January 12, 2026 - Session 4 (Current)
+1. **Data Center Management**
+   - Admin CRUD for data centers at `/admin/datacenters`
+   - 4 seeded data centers: US East (NY), US West (LA), EU Central (Frankfurt), Asia (Singapore)
+   - Data center selection during order process
 
-### January 12, 2026 - Session 3 (Current)
-1. **Email API Configuration**: Admin can configure SendGrid API key and sender email
-2. **PDF Invoice Generation**: Users can download invoices as PDF from billing page
-3. **Password Reset Flow**: Complete forgot password and reset password pages
-4. **Server Control Actions**: Request Reboot and OS Reinstall buttons (creates support tickets)
-5. **Payment Proof Upload**: Users can upload payment proof URL for orders
-6. **Admin Orders with User Details**: Shows customer name, email, company for each order
-7. **Admin User Details Page**: Full user activity view with tabs for Orders, Servers, Invoices, Tickets, Transactions
-8. **Admin Send Notification**: Send custom email notifications to users
-9. **Admin User Statistics**: Total spent, active services, total orders, open tickets
+2. **Add-ons System**
+   - Admin CRUD for add-ons at `/admin/addons`
+   - 7 seeded add-ons: cPanel/WHM, Plesk, SSL Standard, SSL Wildcard, Daily Backup, Additional IPv4, Priority Support
+   - Add-on selection during order with dynamic pricing
+
+3. **Enhanced Order Flow**
+   - 4-step process: Plan → Configure → Add-ons → Review
+   - Data center location selection in Step 2
+   - Add-on checkboxes with pricing adjusted for billing cycle
+   - Total calculation includes base plan + add-ons
+
+4. **Auto-Email PDF Invoices**
+   - PDF invoice generated and emailed on order creation
+   - Includes order details, add-ons breakdown, total
+
+5. **Recurring Invoice Automation**
+   - Background task to create renewal invoices 7 days before server renewal
+   - Email notification sent to user with invoice
+
+6. **Auto-Suspend Unpaid Services**
+   - Background task to check overdue invoices daily
+   - Suspended servers can be unsuspended by admin after payment
+   - Email notification sent to user on suspension
+
+7. **Admin Controls**
+   - Manual trigger endpoints: `/admin/run-renewal-check`, `/admin/run-suspend-check`
+   - Unsuspend server: `/admin/servers/{id}/unsuspend`
+   - Navigation updated with Data Centers and Add-ons links
 
 ## Database Models
 - `users`: {email, full_name, hashed_password, role, wallet_balance, is_active, totp_secret}
-- `plans`: {name, type, specs, price, features, is_active}
-- `orders`: {user_id, plan_id, billing_cycle, total_price, order_status, payment_proof_url}
-- `servers`: {user_id, order_id, name, ip_address, specs, credentials, status}
-- `invoices`: {user_id, invoice_number, amount, status, due_date}
+- `plans`: {name, type, specs, price_monthly/quarterly/yearly, features, is_active}
+- `datacenters`: {name, location, country, description, is_active} *NEW*
+- `addons`: {name, type, price, billing_cycle, description, is_active} *NEW*
+- `orders`: {user_id, plan_id, data_center_id, addons[], addon_details[], amount, status}
+- `servers`: {user_id, order_id, credentials, status, suspended_at, renewal_date}
+- `invoices`: {user_id, invoice_number, amount, status, due_date, server_id}
 - `tickets` & `ticket_messages`: Support system
 - `transactions`: Wallet history
-- `site_settings`: Singleton with email config, contact info, legal pages
-- `payment_proofs`: Payment proof submissions
+- `site_settings`: Email config, contact info, legal pages
+
+## API Endpoints Summary
+
+### Public
+- GET /api/datacenters/ - List active data centers
+- GET /api/addons/ - List active add-ons
+- GET /api/plans/ - List active plans
+
+### User
+- POST /api/orders/ - Create order with data_center_id and addons[]
+- GET /api/invoices/{id}/pdf - Download invoice PDF
+- POST /api/servers/{id}/control - Request reboot/reinstall
+
+### Admin
+- CRUD /api/admin/datacenters - Manage data centers
+- CRUD /api/admin/addons - Manage add-ons
+- POST /api/admin/run-renewal-check - Trigger renewal invoice creation
+- POST /api/admin/run-suspend-check - Trigger overdue service suspension
+- POST /api/admin/servers/{id}/unsuspend - Restore suspended server
+
+## Seeded Data
+- **4 Data Centers**: US East (New York), US West (Los Angeles), EU Central (Frankfurt), Asia (Singapore)
+- **7 Add-ons**: cPanel/WHM ($15/mo), Plesk ($12/mo), SSL Standard ($9.99/yr), SSL Wildcard ($49.99/yr), Daily Backup ($5/mo), Additional IPv4 ($3/mo), Priority Support ($19.99/mo)
+- **7 Plans**: VPS Starter/Basic/Pro, Shared Starter/Pro, Dedicated Entry/Pro
 
 ## Prioritized Backlog
 
 ### P0 (Critical) - COMPLETED ✅
 - Order page bug fix
-- Admin site settings
+- Admin site settings with email config
 - Admin credential sharing
-- Email API configuration
 - PDF invoice download
 - Password reset flow
 - Server control actions
 - Payment proof upload
 - Admin orders with user details
-- Admin user details page with full activity
+- Admin user details page
+- Data center selection
+- Add-ons selection
+- Auto-email PDF invoices
+- Recurring invoice automation
+- Auto-suspend unpaid services
 
 ### P1 (High Priority)
-- Data center selection during order
-- Auto invoice PDF email on creation
+- Server usage statistics dashboard
+- Stripe/crypto payment gateway integration
 
 ### P2 (Medium Priority)
-- Recurring invoice automation
-- Add-ons selection (cPanel, SSL, Backup, IPs)
-- Server usage statistics dashboard
+- Email template customization in admin
+- Affiliate/referral system
+- API documentation page
 
 ### P3 (Low Priority)
-- Email templates customization in admin
-- Affiliate/referral system
 - Multi-language support
 - Live chat integration
+- Mobile app
 
 ## Test Credentials
 - **Admin**: brijesh.kr.dube@gmail.com / Cloud@9874
@@ -116,20 +128,5 @@ Build a complete, production-ready web application for a server renting company 
 
 ## MOCKED Integrations
 - **SendGrid**: Email functionality logs warning if API key not configured. Configure via Admin → Settings → Email tab
-- **Server Control**: Reboot/Reinstall requests create support tickets (don't actually control servers)
-
-## API Endpoints Summary
-### Authentication
-- POST /api/auth/register, /api/auth/login
-- POST /api/auth/forgot-password, /api/auth/reset-password
-
-### User
-- GET /api/plans, /api/orders, /api/servers, /api/invoices, /api/tickets
-- GET /api/invoices/{id}/pdf - PDF download
-- POST /api/orders, /api/servers/{id}/control, /api/orders/{id}/payment-proof
-
-### Admin
-- GET /api/admin/stats, /api/admin/orders (includes user details)
-- GET /api/admin/users/{id}/details - Full user activity
-- POST /api/admin/users/{id}/notify - Send notification email
-- GET/PUT /api/admin/settings - Site configuration including email
+- **Server Control**: Reboot/Reinstall requests create support tickets
+- **Background Tasks**: Run on schedule; manual trigger available via admin endpoints
