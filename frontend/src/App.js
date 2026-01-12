@@ -91,6 +91,13 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/sla" element={<SLAPage />} />
+          <Route path="/aup" element={<AUPPage />} />
+          <Route path="/data-centers" element={<DataCentersPage />} />
+          <Route path="/support" element={<SupportPage />} />
           
           {/* User Dashboard Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
@@ -112,6 +119,7 @@ function App() {
           <Route path="/admin/plans" element={<ProtectedRoute adminOnly><AdminPlans /></ProtectedRoute>} />
           <Route path="/admin/tickets" element={<ProtectedRoute adminOnly><AdminTickets /></ProtectedRoute>} />
           <Route path="/admin/tickets/:ticketId" element={<ProtectedRoute adminOnly><AdminTicketDetails /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
