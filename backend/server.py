@@ -377,18 +377,31 @@ def generate_invoice_number():
     return f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
 
 async def send_email(to_email: str, subject: str, html_content: str):
-    if not SENDGRID_API_KEY:
+    # First try environment variable, then database settings
+    api_key = SENDGRID_API_KEY
+    sender = SENDER_EMAIL
+    
+    # If not in env, try to get from database
+    if not api_key:
+        settings = await db.site_settings.find_one({"_id": "site_settings"})
+        if settings:
+            api_key = settings.get("sendgrid_api_key", "")
+            sender = settings.get("sender_email", SENDER_EMAIL) or SENDER_EMAIL
+    
+    if not api_key:
         logging.warning("SendGrid API key not configured, skipping email")
         return False
+    
     try:
         message = Mail(
-            from_email=SENDER_EMAIL,
+            from_email=sender,
             to_emails=to_email,
             subject=subject,
             html_content=html_content
         )
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg = SendGridAPIClient(api_key)
         sg.send(message)
+        logging.info(f"Email sent to {to_email}: {subject}")
         return True
     except Exception as e:
         logging.error(f"Failed to send email: {e}")
