@@ -43,6 +43,8 @@ import AdminTickets from "./pages/admin/Tickets";
 import AdminTicketDetails from "./pages/admin/TicketDetails";
 import AdminPlans from "./pages/admin/Plans";
 import AdminSettings from "./pages/admin/Settings";
+import AdminDataCenters from "./pages/admin/DataCenters";
+import AdminAddOns from "./pages/admin/AddOns";
 
 // Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
