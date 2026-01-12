@@ -600,12 +600,41 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
     
+    # Calculate base price
     price_map = {
         "monthly": plan["price_monthly"],
         "quarterly": plan["price_quarterly"],
         "yearly": plan["price_yearly"]
     }
     amount = price_map[order_data.billing_cycle]
+    
+    # Get data center info
+    data_center_name = None
+    if order_data.data_center_id:
+        datacenter = await db.datacenters.find_one({"id": order_data.data_center_id, "is_active": True}, {"_id": 0})
+        if datacenter:
+            data_center_name = datacenter["name"]
+    
+    # Calculate add-on pricing
+    addon_details = []
+    addon_total = 0
+    if order_data.addons:
+        addons = await db.addons.find({"id": {"$in": order_data.addons}, "is_active": True}, {"_id": 0}).to_list(50)
+        for addon in addons:
+            addon_price = addon["price"]
+            # Adjust add-on price based on billing cycle
+            if addon["billing_cycle"] == "monthly" and order_data.billing_cycle == "quarterly":
+                addon_price = addon["price"] * 3
+            elif addon["billing_cycle"] == "monthly" and order_data.billing_cycle == "yearly":
+                addon_price = addon["price"] * 12
+            addon_details.append({
+                "id": addon["id"],
+                "name": addon["name"],
+                "price": addon_price
+            })
+            addon_total += addon_price
+    
+    total_amount = amount + addon_total
     
     order_id = str(uuid.uuid4())
     order_doc = {
@@ -616,8 +645,11 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         "billing_cycle": order_data.billing_cycle,
         "os": order_data.os,
         "control_panel": order_data.control_panel,
+        "data_center_id": order_data.data_center_id,
+        "data_center_name": data_center_name,
         "addons": order_data.addons or [],
-        "amount": amount,
+        "addon_details": addon_details,
+        "amount": total_amount,
         "payment_method": order_data.payment_method,
         "payment_status": "pending",
         "order_status": "pending",
@@ -628,34 +660,28 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     await db.orders.insert_one(order_doc)
     
     # Create invoice
+    invoice_id = str(uuid.uuid4())
+    invoice_number = generate_invoice_number()
     invoice_doc = {
-        "id": str(uuid.uuid4()),
+        "id": invoice_id,
         "user_id": user["id"],
         "order_id": order_id,
-        "invoice_number": generate_invoice_number(),
-        "amount": amount,
+        "invoice_number": invoice_number,
+        "amount": total_amount,
         "status": "unpaid",
         "due_date": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
         "paid_date": None,
-        "description": f"Order: {plan['name']} - {order_data.billing_cycle}",
+        "description": f"Order: {plan['name']} - {order_data.billing_cycle}" + (f" + {len(addon_details)} add-ons" if addon_details else ""),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.invoices.insert_one(invoice_doc)
     
-    # Send order confirmation email
+    # Send order confirmation email with PDF invoice attached
     background_tasks.add_task(
-        send_email,
-        user["email"],
-        f"Order Confirmation - {order_id[:8]}",
-        f"""
-        <h2>Order Received!</h2>
-        <p>Thank you for your order, {user['full_name']}!</p>
-        <p><strong>Order ID:</strong> {order_id[:8]}</p>
-        <p><strong>Plan:</strong> {plan['name']}</p>
-        <p><strong>Amount:</strong> ${amount}</p>
-        <p><strong>Payment Method:</strong> {order_data.payment_method.replace('_', ' ').title()}</p>
-        <p>Please complete your payment to activate your service.</p>
-        """
+        send_invoice_email,
+        user,
+        invoice_doc,
+        order_doc
     )
     
     return OrderResponse(**{k: v for k, v in order_doc.items() if k != "_id"})
