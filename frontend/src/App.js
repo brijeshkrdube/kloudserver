@@ -17,6 +17,8 @@ import SLAPage from "./pages/SLAPage";
 import AUPPage from "./pages/AUPPage";
 import DataCentersPage from "./pages/DataCentersPage";
 import SupportPage from "./pages/SupportPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // User Dashboard Pages
 import UserDashboard from "./pages/user/Dashboard";
