@@ -282,6 +282,15 @@ class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str
 
+class ServerControlAction(BaseModel):
+    action: Literal["reboot", "reinstall"]
+    confirm: bool = False
+
+class PaymentProofUpload(BaseModel):
+    order_id: str
+    proof_url: str
+    payment_reference: Optional[str] = None
+
 # ============ UTILITY FUNCTIONS ============
 
 def hash_password(password: str) -> str:
