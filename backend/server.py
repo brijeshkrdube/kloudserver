@@ -882,7 +882,7 @@ async def admin_get_servers(admin: dict = Depends(get_admin_user)):
     return servers
 
 @admin_router.put("/servers/{server_id}")
-async def admin_update_server(server_id: str, ip_address: Optional[str] = None, hostname: Optional[str] = None, 
+async def admin_update_server(server_id: str, background_tasks: BackgroundTasks, ip_address: Optional[str] = None, hostname: Optional[str] = None, 
                                username: Optional[str] = None, password: Optional[str] = None,
                                status: Optional[str] = None, panel_url: Optional[str] = None,
                                admin: dict = Depends(get_admin_user)):
@@ -891,21 +891,56 @@ async def admin_update_server(server_id: str, ip_address: Optional[str] = None, 
         raise HTTPException(status_code=404, detail="Server not found")
     
     updates = {}
+    credentials_changed = False
     if ip_address:
         updates["ip_address"] = ip_address
+        credentials_changed = True
     if hostname:
         updates["hostname"] = hostname
     if username:
         updates["username"] = username
+        credentials_changed = True
     if password:
         updates["password"] = password
+        credentials_changed = True
     if status:
         updates["status"] = status
     if panel_url is not None:
         updates["panel_url"] = panel_url
+        credentials_changed = True
     
     if updates:
         await db.servers.update_one({"id": server_id}, {"$set": updates})
+        
+        # Send notification email if credentials were updated
+        if credentials_changed:
+            user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+            if user:
+                # Get updated server info
+                updated_server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+                background_tasks.add_task(
+                    send_email,
+                    user["email"],
+                    "Server Credentials Updated - CloudNest",
+                    f"""
+                    <h2>Your Server Credentials Have Been Updated</h2>
+                    <p>Hi {user['full_name']},</p>
+                    <p>The credentials for your server have been updated by our team.</p>
+                    <hr>
+                    <p><strong>Updated Server Details:</strong></p>
+                    <ul>
+                        <li><strong>Hostname:</strong> {updated_server['hostname']}</li>
+                        <li><strong>IP Address:</strong> {updated_server['ip_address']}</li>
+                        <li><strong>Username:</strong> {updated_server['username']}</li>
+                        <li><strong>Password:</strong> {updated_server['password']}</li>
+                        <li><strong>SSH Port:</strong> {updated_server['ssh_port']}</li>
+                        {f"<li><strong>Panel URL:</strong> {updated_server['panel_url']}</li>" if updated_server.get('panel_url') else ''}
+                    </ul>
+                    <hr>
+                    <p>You can view your updated server details anytime in your dashboard.</p>
+                    <p><strong>Important:</strong> Please change your password after first login if this is a new credential.</p>
+                    """
+                )
     
     return {"message": "Server updated"}
 
