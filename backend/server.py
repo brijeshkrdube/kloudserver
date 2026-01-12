@@ -1781,6 +1781,27 @@ async def admin_update_user(user_id: str, is_verified: Optional[bool] = None, wa
     await db.users.update_one({"id": user_id}, {"$set": updates})
     return {"message": "User updated"}
 
+@admin_router.post("/test-email")
+async def admin_test_email(admin: dict = Depends(get_admin_user)):
+    """Send a test email to verify SendGrid configuration"""
+    result = await send_email(
+        admin["email"],
+        "Test Email - KloudNests",
+        f"""
+        <h2>Test Email</h2>
+        <p>Hi {admin.get('full_name', 'Admin')},</p>
+        <p>This is a test email to verify your SendGrid configuration is working correctly.</p>
+        <p>If you received this email, your email settings are properly configured!</p>
+        <hr>
+        <p>Best regards,<br>KloudNests System</p>
+        """
+    )
+    
+    if result:
+        return {"message": f"Test email sent to {admin['email']}"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email. Check your SendGrid API key and sender email configuration.")
+
 @admin_router.get("/tickets")
 async def admin_get_tickets(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
     query = {}
