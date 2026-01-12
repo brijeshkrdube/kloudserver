@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Server, LayoutDashboard, ShoppingCart, CreditCard, Wallet, 
   MessageSquare, User, Settings, LogOut, Menu, X, ChevronRight,
-  Users, Package, FileText, Bell
+  Users, Package, FileText, Bell, Tags
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
@@ -36,6 +36,7 @@ const DashboardLayout = ({ children, isAdmin = false }) => {
     { name: 'Servers', href: '/admin/servers', icon: Server },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Billing', href: '/admin/billing', icon: FileText },
+    { name: 'Plans', href: '/admin/plans', icon: Tags },
     { name: 'Tickets', href: '/admin/tickets', icon: MessageSquare },
   ];
 
