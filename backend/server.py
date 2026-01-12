@@ -394,6 +394,192 @@ async def send_email(to_email: str, subject: str, html_content: str):
         logging.error(f"Failed to send email: {e}")
         return False
 
+async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
+    """Send invoice email with PDF attachment"""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from io import BytesIO
+    import base64
+    
+    # Generate PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=50, bottomMargin=50)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=24, spaceAfter=30)
+    header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=12, spaceAfter=5)
+    
+    elements.append(Paragraph("<b>CloudNest</b>", title_style))
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph(f"<b>INVOICE</b>", ParagraphStyle('Invoice', fontSize=20, spaceAfter=20)))
+    elements.append(Paragraph(f"<b>Invoice Number:</b> {invoice['invoice_number']}", header_style))
+    elements.append(Paragraph(f"<b>Date:</b> {invoice['created_at'][:10]}", header_style))
+    elements.append(Paragraph(f"<b>Due Date:</b> {invoice['due_date'][:10]}", header_style))
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Bill To:</b>", header_style))
+    elements.append(Paragraph(user.get("full_name", "Customer"), header_style))
+    elements.append(Paragraph(user.get("email", ""), header_style))
+    elements.append(Spacer(1, 30))
+    
+    data = [
+        ['Description', 'Amount'],
+        [invoice['description'], f"${invoice['amount']:.2f}"],
+        ['', ''],
+        ['<b>Total</b>', f"<b>${invoice['amount']:.2f}</b>"]
+    ]
+    
+    table = Table(data, colWidths=[400, 100])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1f2e')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+    ]))
+    elements.append(table)
+    
+    doc.build(elements)
+    pdf_data = buffer.getvalue()
+    buffer.close()
+    
+    # Send email with HTML content
+    html_content = f"""
+    <h2>Invoice #{invoice['invoice_number']}</h2>
+    <p>Hi {user.get('full_name', 'Customer')},</p>
+    <p>A new invoice has been generated for your account.</p>
+    <hr>
+    <p><strong>Invoice Number:</strong> {invoice['invoice_number']}</p>
+    <p><strong>Amount:</strong> ${invoice['amount']:.2f}</p>
+    <p><strong>Due Date:</strong> {invoice['due_date'][:10]}</p>
+    <p><strong>Description:</strong> {invoice['description']}</p>
+    <hr>
+    <p>Please complete your payment before the due date to avoid service interruption.</p>
+    <p>You can view and download your invoice from your dashboard.</p>
+    <p>Best regards,<br>CloudNest Team</p>
+    """
+    
+    await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - CloudNest", html_content)
+
+async def check_and_create_renewal_invoices():
+    """Background task: Create renewal invoices for servers nearing renewal date"""
+    # Find servers with renewal date within next 7 days that don't have pending invoices
+    seven_days_ahead = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    today = datetime.now(timezone.utc).isoformat()
+    
+    servers = await db.servers.find({
+        "status": "active",
+        "renewal_date": {"$lte": seven_days_ahead, "$gte": today}
+    }, {"_id": 0}).to_list(500)
+    
+    for server in servers:
+        # Check if there's already a pending renewal invoice
+        existing_invoice = await db.invoices.find_one({
+            "server_id": server["id"],
+            "status": {"$in": ["unpaid", "pending"]},
+            "description": {"$regex": "Renewal"}
+        }, {"_id": 0})
+        
+        if existing_invoice:
+            continue
+        
+        # Get the order to determine pricing
+        order = await db.orders.find_one({"id": server["order_id"]}, {"_id": 0})
+        if not order:
+            continue
+        
+        # Create renewal invoice
+        invoice_id = str(uuid.uuid4())
+        invoice_number = generate_invoice_number()
+        invoice_doc = {
+            "id": invoice_id,
+            "user_id": server["user_id"],
+            "order_id": server["order_id"],
+            "server_id": server["id"],
+            "invoice_number": invoice_number,
+            "amount": order["amount"],
+            "status": "unpaid",
+            "due_date": server["renewal_date"],
+            "paid_date": None,
+            "description": f"Renewal: {server['plan_name']} - {order['billing_cycle']}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.invoices.insert_one(invoice_doc)
+        
+        # Send renewal invoice email
+        user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+        if user:
+            await send_invoice_email(user, invoice_doc)
+        
+        logging.info(f"Created renewal invoice {invoice_number} for server {server['hostname']}")
+
+async def check_and_suspend_overdue_services():
+    """Background task: Suspend servers with overdue invoices"""
+    # Find unpaid invoices past due date
+    today = datetime.now(timezone.utc).isoformat()
+    
+    overdue_invoices = await db.invoices.find({
+        "status": "unpaid",
+        "due_date": {"$lt": today}
+    }, {"_id": 0}).to_list(500)
+    
+    for invoice in overdue_invoices:
+        # If invoice has a server_id (renewal invoice), suspend that server
+        if invoice.get("server_id"):
+            server = await db.servers.find_one({"id": invoice["server_id"], "status": "active"}, {"_id": 0})
+            if server:
+                await db.servers.update_one(
+                    {"id": server["id"]},
+                    {"$set": {"status": "suspended", "suspended_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                # Notify user
+                user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+                if user:
+                    await send_email(
+                        user["email"],
+                        f"Service Suspended - {server['hostname']}",
+                        f"""
+                        <h2>Service Suspended</h2>
+                        <p>Hi {user.get('full_name', 'Customer')},</p>
+                        <p>Your server <strong>{server['hostname']}</strong> has been suspended due to non-payment.</p>
+                        <p><strong>Invoice:</strong> {invoice['invoice_number']}</p>
+                        <p><strong>Amount Due:</strong> ${invoice['amount']:.2f}</p>
+                        <p>Please pay your outstanding invoice to restore your service.</p>
+                        <p>If you believe this is an error, please contact support.</p>
+                        """
+                    )
+                
+                logging.info(f"Suspended server {server['hostname']} due to overdue invoice {invoice['invoice_number']}")
+        
+        # For order invoices, check if there's a server associated with the order
+        elif invoice.get("order_id"):
+            server = await db.servers.find_one({"order_id": invoice["order_id"], "status": "active"}, {"_id": 0})
+            if server:
+                await db.servers.update_one(
+                    {"id": server["id"]},
+                    {"$set": {"status": "suspended", "suspended_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+                if user:
+                    await send_email(
+                        user["email"],
+                        f"Service Suspended - {server['hostname']}",
+                        f"""
+                        <h2>Service Suspended</h2>
+                        <p>Hi {user.get('full_name', 'Customer')},</p>
+                        <p>Your server <strong>{server['hostname']}</strong> has been suspended due to non-payment.</p>
+                        <p><strong>Invoice:</strong> {invoice['invoice_number']}</p>
+                        <p><strong>Amount Due:</strong> ${invoice['amount']:.2f}</p>
+                        <p>Please pay your outstanding invoice to restore your service.</p>
+                        """
+                    )
+                
+                logging.info(f"Suspended server {server['hostname']} due to overdue invoice {invoice['invoice_number']}")
+
 # ============ AUTH ROUTES ============
 
 @auth_router.post("/register", response_model=TokenResponse)
