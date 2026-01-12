@@ -1207,9 +1207,9 @@ async def seed_data():
     if not admin_exists:
         admin_doc = {
             "id": str(uuid.uuid4()),
-            "email": "admin@cloudnest.com",
-            "password_hash": hash_password("Admin@123"),
-            "full_name": "System Admin",
+            "email": "brijesh.kr.dube@gmail.com",
+            "password_hash": hash_password("Cloud@9874"),
+            "full_name": "Brijesh Dube",
             "company": "CloudNest",
             "role": "super_admin",
             "wallet_balance": 0.0,
@@ -1220,7 +1220,7 @@ async def seed_data():
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         await db.users.insert_one(admin_doc)
-        logger.info("Created admin user: admin@cloudnest.com / Admin@123")
+        logger.info("Created admin user: brijesh.kr.dube@gmail.com / Cloud@9874")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
