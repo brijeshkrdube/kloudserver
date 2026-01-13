@@ -194,6 +194,65 @@ const UserProfile = () => {
           </div>
         </div>
 
+        {/* Change Password Section */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-yellow-500" />
+            </div>
+            <div>
+              <h2 className="font-heading text-lg font-semibold text-text-primary">Change Password</h2>
+              <p className="text-text-muted text-sm">Update your account password</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Current Password</Label>
+              <Input
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                className="input-field"
+                placeholder="Enter current password"
+                data-testid="current-password"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>New Password</Label>
+                <Input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="input-field"
+                  placeholder="Enter new password"
+                  data-testid="new-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm New Password</Label>
+                <Input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="input-field"
+                  placeholder="Confirm new password"
+                  data-testid="confirm-new-password"
+                />
+              </div>
+            </div>
+            <Button
+              className="btn-primary"
+              onClick={handleChangePassword}
+              disabled={changingPassword}
+              data-testid="change-password-btn"
+            >
+              {changingPassword ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+              Change Password
+            </Button>
+          </div>
+        </div>
+
         {/* 2FA Section */}
         <div className="glass-card p-6">
           <div className="flex items-center gap-4 mb-6">
