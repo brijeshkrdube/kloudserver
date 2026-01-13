@@ -206,7 +206,7 @@ const AdminServers = () => {
                     <Label>Select User *</Label>
                     <Select
                       value={allocateData.user_id}
-                      onValueChange={(value) => setAllocateData({ ...allocateData, user_id: value })}
+                      onValueChange={handleUserSelect}
                     >
                       <SelectTrigger className="input-field">
                         <SelectValue placeholder="Choose a user" />
@@ -214,11 +214,14 @@ const AdminServers = () => {
                       <SelectContent className="bg-background-paper border-white/10 max-h-60">
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
-                            {user.full_name} ({user.email})
+                            {user.full_name} ({user.email}) - ${(user.wallet_balance || 0).toFixed(2)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {allocateData.user_id && (
+                      <p className="text-sm text-text-muted">Wallet Balance: <span className="text-primary font-mono">${selectedUserBalance.toFixed(2)}</span></p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Plan (Optional)</Label>
