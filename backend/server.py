@@ -1925,7 +1925,9 @@ async def admin_create_plan(data: AdminPlanCreate, admin: dict = Depends(get_adm
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.plans.insert_one(plan_doc)
-    return {"message": "Plan created", "plan_id": plan_id, "plan": plan_doc}
+    # Fetch the plan without _id to return clean response
+    created_plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    return {"message": "Plan created", "plan_id": plan_id, "plan": created_plan}
 
 @admin_router.put("/plans/{plan_id}")
 async def admin_update_plan(plan_id: str, data: AdminPlanUpdate, admin: dict = Depends(get_admin_user)):
