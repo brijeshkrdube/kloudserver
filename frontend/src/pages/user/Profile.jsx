@@ -93,6 +93,18 @@ const UserProfile = () => {
     toast.success('Copied to clipboard');
   };
 
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/resend-verification');
+      toast.success('Verification email sent! Please check your inbox.');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send verification email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-8">
