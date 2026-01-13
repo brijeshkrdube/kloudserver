@@ -507,8 +507,8 @@ async def send_invoice_email(user: dict, invoice: dict, order: dict = None):
     await send_email(user["email"], f"Invoice #{invoice['invoice_number']} - {company_name}", html_content)
 
 async def check_and_create_renewal_invoices():
-    """Background task: Create renewal invoices for servers nearing renewal date"""
-    # Find servers with renewal date within next 7 days that don't have pending invoices
+    """Background task: Auto-renew from wallet or create renewal invoices for servers nearing renewal date"""
+    # Find servers with renewal date within next 7 days
     seven_days_ahead = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
     today = datetime.now(timezone.utc).isoformat()
     
@@ -533,39 +533,132 @@ async def check_and_create_renewal_invoices():
         if not order:
             continue
         
-        # Create renewal invoice
-        invoice_id = str(uuid.uuid4())
-        invoice_number = generate_invoice_number()
-        invoice_doc = {
-            "id": invoice_id,
-            "user_id": server["user_id"],
-            "order_id": server["order_id"],
-            "server_id": server["id"],
-            "invoice_number": invoice_number,
-            "amount": order["amount"],
-            "status": "unpaid",
-            "due_date": server["renewal_date"],
-            "paid_date": None,
-            "description": f"Renewal: {server['plan_name']} - {order['billing_cycle']}",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.invoices.insert_one(invoice_doc)
-        
-        # Send renewal invoice email
+        # Get user and check wallet balance
         user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
-        if user:
-            await send_invoice_email(user, invoice_doc)
+        if not user:
+            continue
         
-        logging.info(f"Created renewal invoice {invoice_number} for server {server['hostname']}")
+        renewal_amount = order["amount"]
+        wallet_balance = user.get("wallet_balance", 0)
+        
+        # Try auto-renewal from wallet if sufficient balance
+        if wallet_balance >= renewal_amount:
+            # Deduct from wallet
+            new_balance = wallet_balance - renewal_amount
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$set": {"wallet_balance": new_balance}}
+            )
+            
+            # Create transaction record
+            await db.transactions.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "type": "debit",
+                "amount": renewal_amount,
+                "description": f"Auto-renewal: {server['plan_name']} - {server['hostname']}",
+                "reference": f"SERVER-{server['id'][:8]}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            # Extend renewal date
+            cycle_days = {"monthly": 30, "quarterly": 90, "yearly": 365}
+            new_renewal = datetime.now(timezone.utc) + timedelta(days=cycle_days.get(order["billing_cycle"], 30))
+            await db.servers.update_one(
+                {"id": server["id"]},
+                {"$set": {"renewal_date": new_renewal.isoformat()}}
+            )
+            
+            # Create paid invoice record
+            invoice_id = str(uuid.uuid4())
+            invoice_number = generate_invoice_number()
+            invoice_doc = {
+                "id": invoice_id,
+                "user_id": server["user_id"],
+                "order_id": server["order_id"],
+                "server_id": server["id"],
+                "invoice_number": invoice_number,
+                "amount": renewal_amount,
+                "status": "paid",
+                "due_date": server["renewal_date"],
+                "paid_date": datetime.now(timezone.utc).isoformat(),
+                "description": f"Auto-Renewal (Wallet): {server['plan_name']} - {order['billing_cycle']}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.invoices.insert_one(invoice_doc)
+            
+            # Send confirmation email
+            await send_email(
+                user["email"],
+                f"Service Renewed - {server['hostname']}",
+                f"""
+                <h2>Service Auto-Renewed Successfully!</h2>
+                <p>Hi {user.get('full_name', 'Customer')},</p>
+                <p>Your server <strong>{server['hostname']}</strong> has been automatically renewed using your wallet balance.</p>
+                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Amount Charged:</strong> ${renewal_amount:.2f}</p>
+                    <p><strong>New Renewal Date:</strong> {new_renewal.strftime('%B %d, %Y')}</p>
+                    <p><strong>Remaining Wallet Balance:</strong> ${new_balance:.2f}</p>
+                </div>
+                <p>Thank you for choosing KloudNests!</p>
+                """
+            )
+            
+            logging.info(f"Auto-renewed server {server['hostname']} from wallet. New balance: ${new_balance:.2f}")
+        else:
+            # Insufficient wallet balance - create renewal invoice
+            invoice_id = str(uuid.uuid4())
+            invoice_number = generate_invoice_number()
+            invoice_doc = {
+                "id": invoice_id,
+                "user_id": server["user_id"],
+                "order_id": server["order_id"],
+                "server_id": server["id"],
+                "invoice_number": invoice_number,
+                "amount": renewal_amount,
+                "status": "unpaid",
+                "due_date": server["renewal_date"],
+                "paid_date": None,
+                "description": f"Renewal: {server['plan_name']} - {order['billing_cycle']}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.invoices.insert_one(invoice_doc)
+            
+            # Send renewal invoice email with wallet top-up reminder
+            await send_email(
+                user["email"],
+                f"Renewal Invoice - {server['hostname']}",
+                f"""
+                <h2>Service Renewal Required</h2>
+                <p>Hi {user.get('full_name', 'Customer')},</p>
+                <p>Your server <strong>{server['hostname']}</strong> is due for renewal.</p>
+                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Invoice #:</strong> {invoice_number}</p>
+                    <p><strong>Amount Due:</strong> ${renewal_amount:.2f}</p>
+                    <p><strong>Due Date:</strong> {server['renewal_date'][:10]}</p>
+                    <p><strong>Your Wallet Balance:</strong> ${wallet_balance:.2f}</p>
+                </div>
+                <p><strong>Tip:</strong> Add funds to your wallet for automatic renewals!</p>
+                <p>Please pay before the due date to avoid service suspension.</p>
+                <p>If payment is not received within 7 days after the due date, the service will be automatically cancelled.</p>
+                """
+            )
+            
+            logging.info(f"Created renewal invoice {invoice_number} for server {server['hostname']}")
 
 async def check_and_suspend_overdue_services():
-    """Background task: Suspend servers with overdue invoices"""
-    # Find unpaid invoices past due date
-    today = datetime.now(timezone.utc).isoformat()
+    """Background task: Suspend servers with overdue invoices and cancel after grace period"""
+    today = datetime.now(timezone.utc)
+    today_str = today.isoformat()
     
+    # Grace period: 7 days after due date for suspension, 14 days for cancellation
+    seven_days_ago = (today - timedelta(days=7)).isoformat()
+    fourteen_days_ago = (today - timedelta(days=14)).isoformat()
+    
+    # Find unpaid invoices past due date (for suspension)
     overdue_invoices = await db.invoices.find({
         "status": "unpaid",
-        "due_date": {"$lt": today}
+        "due_date": {"$lt": today_str, "$gte": seven_days_ago}
     }, {"_id": 0}).to_list(500)
     
     for invoice in overdue_invoices:
@@ -590,8 +683,8 @@ async def check_and_suspend_overdue_services():
                         <p>Your server <strong>{server['hostname']}</strong> has been suspended due to non-payment.</p>
                         <p><strong>Invoice:</strong> {invoice['invoice_number']}</p>
                         <p><strong>Amount Due:</strong> ${invoice['amount']:.2f}</p>
+                        <p><strong>Warning:</strong> If payment is not received within 7 days, your service will be permanently cancelled and all data will be deleted.</p>
                         <p>Please pay your outstanding invoice to restore your service.</p>
-                        <p>If you believe this is an error, please contact support.</p>
                         """
                     )
                 
