@@ -19,6 +19,7 @@ import DataCentersPage from "./pages/DataCentersPage";
 import SupportPage from "./pages/SupportPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 // User Dashboard Pages
 import UserDashboard from "./pages/user/Dashboard";
