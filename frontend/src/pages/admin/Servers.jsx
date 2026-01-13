@@ -360,6 +360,74 @@ const AdminServers = () => {
                   />
                 </div>
 
+                {/* Payment Options */}
+                <div className="p-4 bg-white/5 rounded-lg space-y-4">
+                  <h3 className="font-semibold text-text-primary">💰 Payment Options</h3>
+                  <div className="space-y-3">
+                    <div 
+                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        allocateData.payment_received 
+                          ? 'border-green-500 bg-green-500/10' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                      onClick={() => setAllocateData({ ...allocateData, payment_received: true, amount: '' })}
+                    >
+                      <input
+                        type="radio"
+                        checked={allocateData.payment_received}
+                        onChange={() => setAllocateData({ ...allocateData, payment_received: true, amount: '' })}
+                        className="w-4 h-4"
+                      />
+                      <div>
+                        <p className="font-medium text-text-primary">Payment Received (External)</p>
+                        <p className="text-sm text-text-muted">Admin received payment via bank/crypto - No wallet deduction</p>
+                      </div>
+                    </div>
+                    <div 
+                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        !allocateData.payment_received 
+                          ? 'border-blue-500 bg-blue-500/10' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                      onClick={() => setAllocateData({ ...allocateData, payment_received: false })}
+                    >
+                      <input
+                        type="radio"
+                        checked={!allocateData.payment_received}
+                        onChange={() => setAllocateData({ ...allocateData, payment_received: false })}
+                        className="w-4 h-4"
+                      />
+                      <div>
+                        <p className="font-medium text-text-primary">Deduct from User's Wallet</p>
+                        <p className="text-sm text-text-muted">Amount will be deducted from user's wallet balance</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {!allocateData.payment_received && (
+                    <div className="space-y-2 pt-2">
+                      <Label>Amount to Deduct ($) *</Label>
+                      <Input
+                        type="number"
+                        value={allocateData.amount}
+                        onChange={(e) => setAllocateData({ ...allocateData, amount: e.target.value })}
+                        placeholder="0.00"
+                        className="input-field font-mono"
+                        min="0"
+                        step="0.01"
+                      />
+                      {allocateData.user_id && (
+                        <p className={`text-sm ${parseFloat(allocateData.amount || 0) > selectedUserBalance ? 'text-red-500' : 'text-text-muted'}`}>
+                          {parseFloat(allocateData.amount || 0) > selectedUserBalance 
+                            ? `⚠️ Insufficient balance! User only has $${selectedUserBalance.toFixed(2)}`
+                            : `User's wallet: $${selectedUserBalance.toFixed(2)} → After: $${(selectedUserBalance - parseFloat(allocateData.amount || 0)).toFixed(2)}`
+                          }
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Send Email Toggle */}
                 <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
                   <input
@@ -387,7 +455,7 @@ const AdminServers = () => {
                   <Button
                     className="flex-1 btn-primary"
                     onClick={handleAllocateServer}
-                    disabled={submitting}
+                    disabled={submitting || (!allocateData.payment_received && parseFloat(allocateData.amount || 0) > selectedUserBalance)}
                     data-testid="submit-allocate"
                   >
                     {submitting ? (
