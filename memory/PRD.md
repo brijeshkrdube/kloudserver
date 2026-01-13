@@ -70,7 +70,7 @@ Build a complete, production-ready web application for a server renting company 
 - Dashboard, My Services, Order Server, Billing, Wallet, Support Tickets, Profile
 
 ### Admin Dashboard  
-- Dashboard, Orders, Servers, Users, Billing, Plans, Data Centers, Add-ons, Tickets, Automation, Settings
+- Dashboard, Orders, Servers, Users, Billing, Topup Requests, Plans, Data Centers, Add-ons, Tickets, Automation, Settings
 
 ## Test Credentials
 - **Admin**: brijesh.kr.dube@gmail.com / Cloud@9874
@@ -80,6 +80,38 @@ Build a complete, production-ready web application for a server renting company 
 1. Order page Select.Item empty value fix
 2. Ticket creation Select.Item empty value fix
 3. Brand name updated from CloudNest to KloudNests
+4. Plan creation 500 error - MongoDB _id serialization fix
+5. Contact page now uses dynamic settings from admin panel
+
+## Completed Features (Latest Session - Jan 2026)
+
+### Wallet Recharge System
+- 3-step topup flow: Amount/Method → Payment Details → Upload Proof
+- Bank Transfer and Crypto payment methods
+- Payment proof upload with transaction reference
+- Admin Topup Requests management page (`/admin/topup-requests`)
+- Approve/Reject with email notifications
+- Auto-add funds to wallet on approval
+
+### Two-Factor Authentication (2FA)
+- Complete 2FA setup for users and admins
+- QR code generation for authenticator apps
+- Manual secret key entry option
+- Enable/Disable 2FA from Profile page
+- 2FA verification during login
+
+### Auto-Renewal from Wallet
+- Automatic service renewal if wallet has sufficient balance
+- Deducts from wallet and extends renewal date
+- Creates transaction record and paid invoice
+- Email confirmation on auto-renewal
+- Falls back to invoice if insufficient balance
+
+### Automatic Service Cancellation
+- Services suspended after 7 days overdue
+- Services cancelled after 14 days overdue
+- Email notifications at each stage
+- Order status updated on cancellation
 
 ## MOCKED Integrations
 - **SendGrid**: Configure via Admin → Settings → Email tab
