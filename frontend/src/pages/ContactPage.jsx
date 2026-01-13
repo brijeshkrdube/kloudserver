@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -19,6 +19,19 @@ const ContactPage = () => {
     message: '',
   });
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/settings/public`);
+        setSettings(response.data);
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,9 +49,9 @@ const ContactPage = () => {
   };
 
   const contactInfo = [
-    { icon: Mail, label: 'Email', value: 'support@kloudnests.com' },
-    { icon: Phone, label: 'Phone', value: '+1 (555) 123-4567' },
-    { icon: MapPin, label: 'Address', value: '123 Cloud Street, Tech City, TC 12345' },
+    { icon: Mail, label: 'Email', value: settings?.contact_email || 'support@kloudnests.com' },
+    { icon: Phone, label: 'Phone', value: settings?.contact_phone || '+1 (555) 123-4567' },
+    { icon: MapPin, label: 'Address', value: settings?.contact_address || '123 Cloud Street, Tech City, TC 12345' },
   ];
 
   return (
