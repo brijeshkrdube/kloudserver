@@ -784,6 +784,7 @@ async def register(user_data: UserCreate, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_id = str(uuid.uuid4())
+    verification_token = secrets.token_urlsafe(32)
     user_doc = {
         "id": user_id,
         "email": user_data.email.lower(),
@@ -793,6 +794,7 @@ async def register(user_data: UserCreate, background_tasks: BackgroundTasks):
         "role": "user",
         "wallet_balance": 0.0,
         "is_verified": False,
+        "verification_token": verification_token,
         "is_2fa_enabled": False,
         "totp_secret": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -800,15 +802,25 @@ async def register(user_data: UserCreate, background_tasks: BackgroundTasks):
     }
     await db.users.insert_one(user_doc)
     
-    # Send welcome email
+    # Get settings for site URL
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    site_url = settings.get("site_url", "https://kloudnests.com") if settings else "https://kloudnests.com"
+    verify_link = f"{site_url}/verify-email?token={verification_token}"
+    
+    # Send verification email
     background_tasks.add_task(
         send_email,
         user_data.email,
-        "Welcome to KloudNests!",
+        "Verify Your Email - KloudNests",
         f"""
         <h2>Welcome to KloudNests, {user_data.full_name}!</h2>
-        <p>Your account has been created successfully.</p>
-        <p>Start exploring our VPS, Shared Hosting, and Dedicated Server solutions.</p>
+        <p>Thank you for registering! Please verify your email address by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{verify_link}" style="background-color: #3B82F6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Verify Email</a>
+        </div>
+        <p>Or copy and paste this link in your browser:</p>
+        <p style="color: #666; word-break: break-all;">{verify_link}</p>
+        <p>If you didn't create an account, please ignore this email.</p>
         <p>Best regards,<br>KloudNests Team</p>
         """
     )
