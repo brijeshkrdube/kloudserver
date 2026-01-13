@@ -149,23 +149,26 @@ class OrderResponse(BaseModel):
 class ServerResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
-    order_id: str
+    order_id: Optional[str] = None
     user_id: str
     ip_address: str
     hostname: str
     username: str
     password: str
-    ssh_port: int
-    os: str
-    control_panel: Optional[str]
-    panel_url: Optional[str]
+    ssh_port: Optional[str] = "22"
+    os: Optional[str] = None
+    control_panel: Optional[str] = None
+    panel_url: Optional[str] = None
+    panel_username: Optional[str] = None
+    panel_password: Optional[str] = None
     data_center_id: Optional[str] = None
     data_center_name: Optional[str] = None
     status: str
-    plan_name: str
+    plan_name: Optional[str] = "Custom Server"
     renewal_date: str
     created_at: str
     specs: Optional[dict] = None
+    additional_notes: Optional[str] = None
 
 class InvoiceResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
