@@ -117,7 +117,7 @@ const AdminPlans = () => {
         await api.put(`/admin/plans/${editingPlan.id}`, payload);
         toast.success('Plan updated successfully');
       } else {
-        await api.post('/admin/plans/', payload);
+        await api.post('/admin/plans', payload);
         toast.success('Plan created successfully');
       }
 
