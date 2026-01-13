@@ -839,6 +839,57 @@ async def register(user_data: UserCreate, background_tasks: BackgroundTasks):
     )
     return TokenResponse(access_token=token, user=user_response)
 
+@auth_router.get("/verify-email")
+async def verify_email(token: str):
+    """Verify user email with token"""
+    user = await db.users.find_one({"verification_token": token}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    
+    if user.get("is_verified"):
+        return {"message": "Email already verified"}
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"is_verified": True, "verification_token": None}}
+    )
+    
+    return {"message": "Email verified successfully"}
+
+@auth_router.post("/resend-verification")
+async def resend_verification(background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
+    """Resend verification email"""
+    if user.get("is_verified"):
+        raise HTTPException(status_code=400, detail="Email already verified")
+    
+    verification_token = secrets.token_urlsafe(32)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"verification_token": verification_token}}
+    )
+    
+    settings = await db.site_settings.find_one({"_id": "site_settings"})
+    site_url = settings.get("site_url", "https://kloudnests.com") if settings else "https://kloudnests.com"
+    verify_link = f"{site_url}/verify-email?token={verification_token}"
+    
+    background_tasks.add_task(
+        send_email,
+        user["email"],
+        "Verify Your Email - KloudNests",
+        f"""
+        <h2>Email Verification</h2>
+        <p>Please verify your email address by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{verify_link}" style="background-color: #3B82F6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Verify Email</a>
+        </div>
+        <p>Or copy and paste this link in your browser:</p>
+        <p style="color: #666; word-break: break-all;">{verify_link}</p>
+        <p>Best regards,<br>KloudNests Team</p>
+        """
+    )
+    
+    return {"message": "Verification email sent"}
+
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email.lower()}, {"_id": 0})
