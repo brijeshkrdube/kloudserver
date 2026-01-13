@@ -135,6 +135,7 @@ function App() {
           <Route path="/admin/datacenters" element={<ProtectedRoute adminOnly><AdminDataCenters /></ProtectedRoute>} />
           <Route path="/admin/addons" element={<ProtectedRoute adminOnly><AdminAddOns /></ProtectedRoute>} />
           <Route path="/admin/automation" element={<ProtectedRoute adminOnly><AdminAutomation /></ProtectedRoute>} />
+          <Route path="/admin/topup-requests" element={<ProtectedRoute adminOnly><AdminTopupRequests /></ProtectedRoute>} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
