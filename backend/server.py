@@ -2022,7 +2022,10 @@ async def get_public_settings():
             "social_linkedin": "",
             "social_github": ""
         }
-    del settings["_id"]
+    # Remove sensitive fields before returning
+    sensitive_fields = ["_id", "sendgrid_api_key", "sender_email"]
+    for field in sensitive_fields:
+        settings.pop(field, None)
     return settings
 
 # ============ PUBLIC ROUTES ============
