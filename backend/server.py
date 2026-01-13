@@ -1763,6 +1763,8 @@ class AllocateServerRequest(BaseModel):
     control_panel_password: Optional[str] = None
     additional_notes: Optional[str] = None
     send_email: bool = True
+    payment_received: bool = False  # True = admin received payment externally, False = deduct from wallet
+    amount: Optional[float] = None  # Amount to deduct from wallet (if payment_received is False)
 
 @admin_router.post("/servers/allocate")
 async def admin_allocate_server(data: AllocateServerRequest, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
@@ -1771,6 +1773,38 @@ async def admin_allocate_server(data: AllocateServerRequest, background_tasks: B
     user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Handle payment
+    wallet_balance = user.get("wallet_balance", 0)
+    
+    if not data.payment_received:
+        # Need to deduct from wallet
+        if data.amount is None or data.amount <= 0:
+            raise HTTPException(status_code=400, detail="Please specify the amount to deduct from wallet")
+        
+        if wallet_balance < data.amount:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient wallet balance. User has ${wallet_balance:.2f}, required ${data.amount:.2f}"
+            )
+        
+        # Deduct from wallet
+        new_balance = wallet_balance - data.amount
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"wallet_balance": new_balance}}
+        )
+        
+        # Create transaction record
+        await db.transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "type": "debit",
+            "amount": data.amount,
+            "description": f"Server allocation: {data.hostname}",
+            "reference": f"ALLOC-{data.hostname}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
     
     # Get plan info if provided
     plan_name = "Custom Server"
@@ -1798,7 +1832,9 @@ async def admin_allocate_server(data: AllocateServerRequest, background_tasks: B
         "status": "active",
         "renewal_date": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "allocated_by": admin["email"]
+        "allocated_by": admin["email"],
+        "payment_received_externally": data.payment_received,
+        "amount_charged": data.amount if not data.payment_received else 0
     }
     await db.servers.insert_one(server_doc)
     
