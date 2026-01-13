@@ -19,6 +19,7 @@ const AdminSettings = () => {
     contact_phone: '',
     contact_address: '',
     skype_id: '',
+    site_url: '',
     about_us: '',
     terms_of_service: '',
     privacy_policy: '',
