@@ -1222,17 +1222,82 @@ async def get_transactions(user: dict = Depends(get_current_user)):
     transactions = await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return transactions
 
+@user_router.get("/wallet/topup-requests")
+async def get_topup_requests(user: dict = Depends(get_current_user)):
+    """Get user's topup requests"""
+    requests = await db.topup_requests.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return requests
+
 @user_router.post("/wallet/topup")
-async def request_topup(data: WalletTopupRequest, user: dict = Depends(get_current_user)):
+async def request_topup(
+    amount: float = Form(...),
+    payment_method: str = Form(...),
+    transaction_ref: str = Form(...),
+    payment_proof: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_current_user)
+):
+    """Submit a wallet topup request with payment proof"""
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+    
+    if payment_method not in ["bank_transfer", "crypto"]:
+        raise HTTPException(status_code=400, detail="Invalid payment method")
+    
     topup_id = str(uuid.uuid4())
+    
+    # Handle file upload
+    proof_filename = None
+    if payment_proof:
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+        if payment_proof.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed.")
+        
+        # Save file
+        upload_dir = Path("uploads/payment_proofs")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_ext = payment_proof.filename.split(".")[-1] if "." in payment_proof.filename else "jpg"
+        proof_filename = f"{topup_id}.{file_ext}"
+        file_path = upload_dir / proof_filename
+        
+        with open(file_path, "wb") as f:
+            content = await payment_proof.read()
+            f.write(content)
+    
     await db.topup_requests.insert_one({
         "id": topup_id,
         "user_id": user["id"],
-        "amount": data.amount,
-        "payment_method": data.payment_method,
+        "user_email": user["email"],
+        "amount": amount,
+        "payment_method": payment_method,
+        "transaction_ref": transaction_ref,
+        "payment_proof": proof_filename,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat()
     })
+    
+    # Notify admin via email (optional)
+    try:
+        settings = await db.site_settings.find_one({"_id": "site_settings"})
+        admin_email = settings.get("contact_email") if settings else None
+        if admin_email:
+            await send_email(
+                admin_email,
+                f"New Wallet Topup Request - {user['email']}",
+                f"""
+                <h2>New Wallet Topup Request</h2>
+                <p><strong>User:</strong> {user['email']}</p>
+                <p><strong>Amount:</strong> ${amount:.2f}</p>
+                <p><strong>Payment Method:</strong> {payment_method.replace('_', ' ').title()}</p>
+                <p><strong>Transaction Reference:</strong> {transaction_ref}</p>
+                <p><strong>Payment Proof:</strong> {'Uploaded' if proof_filename else 'Not provided'}</p>
+                <p>Please review and approve/reject this request from the admin panel.</p>
+                """
+            )
+    except Exception as e:
+        logger.error(f"Failed to send admin notification: {e}")
+    
     return {"message": "Topup request submitted", "request_id": topup_id}
 
 @user_router.put("/profile")
