@@ -1560,6 +1560,34 @@ async def update_profile(full_name: Optional[str] = None, company: Optional[str]
     await db.users.update_one({"id": user["id"]}, {"$set": updates})
     return {"message": "Profile updated"}
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@user_router.post("/change-password")
+async def change_password(data: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    """Change user's password"""
+    # Get user with password hash
+    user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify current password
+    if not verify_password(data.current_password, user_doc["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Validate new password
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    
+    # Update password
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"password_hash": hash_password(data.new_password), "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Password changed successfully"}
+
 # ============ ADMIN ROUTES ============
 
 @admin_router.get("/dashboard")
