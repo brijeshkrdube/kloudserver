@@ -1959,6 +1959,124 @@ async def admin_update_invoice(invoice_id: str, status: str, admin: dict = Depen
     await db.invoices.update_one({"id": invoice_id}, {"$set": updates})
     return {"message": "Invoice updated"}
 
+# ============ TOPUP REQUESTS MANAGEMENT ============
+
+@admin_router.get("/topup-requests")
+async def admin_get_topup_requests(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
+    """Get all topup requests"""
+    query = {}
+    if status:
+        query["status"] = status
+    requests = await db.topup_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return requests
+
+@admin_router.get("/topup-requests/{request_id}")
+async def admin_get_topup_request(request_id: str, admin: dict = Depends(get_admin_user)):
+    """Get a specific topup request"""
+    request = await db.topup_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Topup request not found")
+    return request
+
+@admin_router.put("/topup-requests/{request_id}")
+async def admin_update_topup_request(
+    request_id: str, 
+    status: str,
+    admin_notes: Optional[str] = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Approve or reject a topup request"""
+    if status not in ["approved", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'")
+    
+    request = await db.topup_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Topup request not found")
+    
+    if request["status"] != "pending":
+        raise HTTPException(status_code=400, detail="This request has already been processed")
+    
+    updates = {
+        "status": status,
+        "processed_at": datetime.now(timezone.utc).isoformat(),
+        "processed_by": admin["email"]
+    }
+    if admin_notes:
+        updates["admin_notes"] = admin_notes
+    
+    await db.topup_requests.update_one({"id": request_id}, {"$set": updates})
+    
+    # If approved, add funds to user wallet
+    if status == "approved":
+        user = await db.users.find_one({"id": request["user_id"]}, {"_id": 0})
+        if user:
+            new_balance = user.get("wallet_balance", 0) + request["amount"]
+            await db.users.update_one(
+                {"id": request["user_id"]},
+                {"$set": {"wallet_balance": new_balance}}
+            )
+            
+            # Create transaction record
+            await db.transactions.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": request["user_id"],
+                "type": "credit",
+                "amount": request["amount"],
+                "description": f"Wallet topup via {request['payment_method'].replace('_', ' ').title()}",
+                "reference": request.get("transaction_ref", ""),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            # Send confirmation email to user
+            try:
+                await send_email(
+                    user["email"],
+                    "Wallet Topup Approved - KloudNests",
+                    f"""
+                    <h2>Wallet Topup Approved!</h2>
+                    <p>Great news! Your wallet topup request has been approved.</p>
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p><strong>Amount Added:</strong> ${request['amount']:.2f}</p>
+                        <p><strong>New Balance:</strong> ${new_balance:.2f}</p>
+                        <p><strong>Payment Method:</strong> {request['payment_method'].replace('_', ' ').title()}</p>
+                    </div>
+                    <p>Thank you for choosing KloudNests!</p>
+                    """
+                )
+            except Exception as e:
+                logger.error(f"Failed to send topup confirmation email: {e}")
+    else:
+        # Send rejection email
+        user = await db.users.find_one({"id": request["user_id"]}, {"_id": 0})
+        if user:
+            try:
+                await send_email(
+                    user["email"],
+                    "Wallet Topup Request Update - KloudNests",
+                    f"""
+                    <h2>Wallet Topup Request Update</h2>
+                    <p>Unfortunately, your wallet topup request could not be approved.</p>
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p><strong>Amount:</strong> ${request['amount']:.2f}</p>
+                        <p><strong>Payment Method:</strong> {request['payment_method'].replace('_', ' ').title()}</p>
+                        {f"<p><strong>Reason:</strong> {admin_notes}</p>" if admin_notes else ""}
+                    </div>
+                    <p>If you believe this is an error, please contact our support team.</p>
+                    """
+                )
+            except Exception as e:
+                logger.error(f"Failed to send topup rejection email: {e}")
+    
+    return {"message": f"Topup request {status}"}
+
+@api_router.get("/uploads/payment_proofs/{filename}")
+async def get_payment_proof(filename: str):
+    """Serve payment proof images"""
+    file_path = Path("uploads/payment_proofs") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path)
+
 @admin_router.get("/plans")
 async def admin_get_plans(admin: dict = Depends(get_admin_user)):
     plans = await db.plans.find({}, {"_id": 0}).to_list(100)
