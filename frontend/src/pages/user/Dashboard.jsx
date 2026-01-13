@@ -19,10 +19,10 @@ const UserDashboard = () => {
     const fetchData = async () => {
       try {
         const [serversRes, ordersRes, invoicesRes, ticketsRes] = await Promise.all([
-          api.get('/servers'),
-          api.get('/orders'),
-          api.get('/invoices'),
-          api.get('/tickets'),
+          api.get('/servers/'),
+          api.get('/orders/'),
+          api.get('/invoices/'),
+          api.get('/tickets/'),
         ]);
         setStats({
           servers: serversRes.data,
