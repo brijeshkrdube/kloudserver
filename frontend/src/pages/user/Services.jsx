@@ -14,7 +14,7 @@ const UserServices = () => {
   useEffect(() => {
     const fetchServers = async () => {
       try {
-        const response = await api.get('/servers');
+        const response = await api.get('/servers/');
         setServers(response.data);
       } catch (error) {
         console.error('Failed to fetch servers:', error);
