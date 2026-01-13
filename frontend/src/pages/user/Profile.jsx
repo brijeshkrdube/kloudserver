@@ -260,11 +260,24 @@ const UserProfile = () => {
               <span className="text-text-muted">Account Type</span>
               <span className="text-text-primary capitalize">{user?.role}</span>
             </div>
-            <div className="flex justify-between py-2 border-b border-white/5">
+            <div className="flex justify-between items-center py-2 border-b border-white/5">
               <span className="text-text-muted">Email Verified</span>
-              <span className={user?.is_verified ? 'text-accent-success' : 'text-accent-warning'}>
-                {user?.is_verified ? 'Yes' : 'Pending'}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className={user?.is_verified ? 'text-accent-success' : 'text-accent-warning'}>
+                  {user?.is_verified ? 'Yes' : 'Pending'}
+                </span>
+                {!user?.is_verified && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendVerification}
+                    disabled={loading}
+                    data-testid="resend-verification"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Resend'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
