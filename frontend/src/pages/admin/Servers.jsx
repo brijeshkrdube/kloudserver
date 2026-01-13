@@ -35,7 +35,10 @@ const AdminServers = () => {
     control_panel_password: '',
     additional_notes: '',
     send_email: true,
+    payment_received: true,  // Default: admin received payment externally
+    amount: '',
   });
+  const [selectedUserBalance, setSelectedUserBalance] = useState(0);
 
   useEffect(() => {
     fetchData();
