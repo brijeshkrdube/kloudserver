@@ -715,6 +715,65 @@ async def check_and_suspend_overdue_services():
                     )
                 
                 logging.info(f"Suspended server {server['hostname']} due to overdue invoice {invoice['invoice_number']}")
+    
+    # Find invoices overdue by more than 14 days (for cancellation)
+    severely_overdue = await db.invoices.find({
+        "status": "unpaid",
+        "due_date": {"$lt": fourteen_days_ago}
+    }, {"_id": 0}).to_list(500)
+    
+    for invoice in severely_overdue:
+        server = None
+        if invoice.get("server_id"):
+            server = await db.servers.find_one({"id": invoice["server_id"], "status": "suspended"}, {"_id": 0})
+        elif invoice.get("order_id"):
+            server = await db.servers.find_one({"order_id": invoice["order_id"], "status": "suspended"}, {"_id": 0})
+        
+        if server:
+            # Cancel the server
+            await db.servers.update_one(
+                {"id": server["id"]},
+                {"$set": {
+                    "status": "cancelled",
+                    "cancelled_at": datetime.now(timezone.utc).isoformat(),
+                    "cancellation_reason": "Non-payment - automatic cancellation"
+                }}
+            )
+            
+            # Update order status
+            if server.get("order_id"):
+                await db.orders.update_one(
+                    {"id": server["order_id"]},
+                    {"$set": {"order_status": "cancelled", "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+            
+            # Mark invoice as cancelled
+            await db.invoices.update_one(
+                {"id": invoice["id"]},
+                {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            
+            # Notify user
+            user = await db.users.find_one({"id": server["user_id"]}, {"_id": 0})
+            if user:
+                await send_email(
+                    user["email"],
+                    f"Service Cancelled - {server['hostname']}",
+                    f"""
+                    <h2>Service Cancelled</h2>
+                    <p>Hi {user.get('full_name', 'Customer')},</p>
+                    <p>Your server <strong>{server['hostname']}</strong> has been permanently cancelled due to non-payment.</p>
+                    <div style="background: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffcdd2;">
+                        <p><strong>⚠️ Important:</strong> All data on this server has been scheduled for deletion.</p>
+                    </div>
+                    <p><strong>Invoice #:</strong> {invoice['invoice_number']}</p>
+                    <p><strong>Outstanding Amount:</strong> ${invoice['amount']:.2f}</p>
+                    <p>If you wish to continue using our services, please create a new order.</p>
+                    <p>If you have any questions, please contact our support team.</p>
+                    """
+                )
+            
+            logging.info(f"Cancelled server {server['hostname']} due to non-payment (14+ days overdue)")
 
 # ============ AUTH ROUTES ============
 
