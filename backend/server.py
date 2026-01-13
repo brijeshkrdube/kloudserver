@@ -1009,15 +1009,28 @@ async def forgot_password(data: PasswordResetRequest, background_tasks: Backgrou
             "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
             "created_at": datetime.now(timezone.utc).isoformat()
         })
+        
+        # Get site URL from settings
+        settings = await db.site_settings.find_one({"_id": "site_settings"})
+        site_url = settings.get("site_url", "https://kloudnests.com") if settings else "https://kloudnests.com"
+        reset_link = f"{site_url}/reset-password?token={reset_token}"
+        
         background_tasks.add_task(
             send_email,
             data.email,
             "Password Reset - KloudNests",
             f"""
             <h2>Password Reset Request</h2>
-            <p>Use this token to reset your password: <strong>{reset_token}</strong></p>
-            <p>This token expires in 1 hour.</p>
-            <p>If you didn't request this, please ignore this email.</p>
+            <p>Hi {user.get('full_name', 'there')},</p>
+            <p>We received a request to reset your password. Click the button below to set a new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}" style="background-color: #3B82F6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+            </div>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style="color: #666; word-break: break-all;">{reset_link}</p>
+            <p><strong>This link expires in 1 hour.</strong></p>
+            <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+            <p>Best regards,<br>KloudNests Team</p>
             """
         )
     return {"message": "If email exists, reset instructions have been sent"}
