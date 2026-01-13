@@ -1703,7 +1703,130 @@ async def admin_create_server(data: AdminServerCreate, background_tasks: Backgro
 @admin_router.get("/servers")
 async def admin_get_servers(admin: dict = Depends(get_admin_user)):
     servers = await db.servers.find({}, {"_id": 0}).to_list(500)
+    # Add user email to each server
+    for server in servers:
+        user = await db.users.find_one({"id": server.get("user_id")}, {"_id": 0, "email": 1})
+        server["user_email"] = user["email"] if user else "Unknown"
     return servers
+
+class AllocateServerRequest(BaseModel):
+    user_id: str
+    plan_id: Optional[str] = None
+    hostname: str
+    ip_address: str
+    username: str = "root"
+    password: str
+    port: str = "22"
+    control_panel_url: Optional[str] = None
+    control_panel_username: Optional[str] = None
+    control_panel_password: Optional[str] = None
+    additional_notes: Optional[str] = None
+    send_email: bool = True
+
+@admin_router.post("/servers/allocate")
+async def admin_allocate_server(data: AllocateServerRequest, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
+    """Allocate a server to any user with credentials"""
+    # Verify user exists
+    user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get plan info if provided
+    plan_name = "Custom Server"
+    if data.plan_id and data.plan_id != "custom":
+        plan = await db.plans.find_one({"id": data.plan_id}, {"_id": 0})
+        if plan:
+            plan_name = plan["name"]
+    
+    server_id = str(uuid.uuid4())
+    server_doc = {
+        "id": server_id,
+        "user_id": data.user_id,
+        "order_id": None,  # Manual allocation, no order
+        "plan_id": data.plan_id if data.plan_id != "custom" else None,
+        "plan_name": plan_name,
+        "hostname": data.hostname,
+        "ip_address": data.ip_address,
+        "username": data.username,
+        "password": data.password,
+        "ssh_port": data.port,
+        "panel_url": data.control_panel_url,
+        "panel_username": data.control_panel_username,
+        "panel_password": data.control_panel_password,
+        "additional_notes": data.additional_notes,
+        "status": "active",
+        "renewal_date": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "allocated_by": admin["email"]
+    }
+    await db.servers.insert_one(server_doc)
+    
+    # Send credentials email if requested
+    if data.send_email:
+        control_panel_section = ""
+        if data.control_panel_url:
+            control_panel_section = f"""
+            <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; color: #0369a1;">Control Panel Access</h3>
+                <p><strong>URL:</strong> <a href="{data.control_panel_url}">{data.control_panel_url}</a></p>
+                <p><strong>Username:</strong> {data.control_panel_username or 'N/A'}</p>
+                <p><strong>Password:</strong> {data.control_panel_password or 'N/A'}</p>
+            </div>
+            """
+        
+        notes_section = ""
+        if data.additional_notes:
+            notes_section = f"""
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; color: #92400e;">Additional Information</h3>
+                <p>{data.additional_notes}</p>
+            </div>
+            """
+        
+        background_tasks.add_task(
+            send_email,
+            user["email"],
+            f"Your Server is Ready! - {data.hostname}",
+            f"""
+            <h2>🎉 Your Server Has Been Allocated!</h2>
+            <p>Hi {user['full_name']},</p>
+            <p>Great news! Your server has been set up and is ready to use.</p>
+            
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #1e40af;">SSH / Server Access</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Hostname:</strong></td><td>{data.hostname}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>IP Address:</strong></td><td>{data.ip_address}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Username:</strong></td><td>{data.username}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Password:</strong></td><td>{data.password}</td></tr>
+                    <tr><td style="padding: 8px 0;"><strong>SSH Port:</strong></td><td>{data.port}</td></tr>
+                </table>
+            </div>
+            
+            <div style="background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0;">
+                <strong>Quick Connect Command:</strong><br>
+                ssh {data.username}@{data.ip_address} -p {data.port}
+            </div>
+            
+            {control_panel_section}
+            {notes_section}
+            
+            <p><strong>🔐 Security Tips:</strong></p>
+            <ul>
+                <li>Change your password after first login</li>
+                <li>Keep your credentials secure</li>
+                <li>Enable firewall rules</li>
+            </ul>
+            
+            <p>You can view your server details anytime in your <a href="https://kloudnests.com/dashboard/services">dashboard</a>.</p>
+            
+            <p>If you have any questions, our support team is here to help!</p>
+            
+            <p>Best regards,<br><strong>KloudNests Team</strong></p>
+            """
+        )
+    
+    return {"message": "Server allocated successfully", "server_id": server_id}
 
 @admin_router.post("/servers/{server_id}/send-credentials")
 async def admin_send_credentials(server_id: str, background_tasks: BackgroundTasks, admin: dict = Depends(get_admin_user)):
