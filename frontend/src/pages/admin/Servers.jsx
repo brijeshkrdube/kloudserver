@@ -101,9 +101,25 @@ const AdminServers = () => {
       return;
     }
 
+    // Validate payment options
+    if (!allocateData.payment_received) {
+      if (!allocateData.amount || parseFloat(allocateData.amount) <= 0) {
+        toast.error('Please enter the amount to deduct from wallet');
+        return;
+      }
+      if (parseFloat(allocateData.amount) > selectedUserBalance) {
+        toast.error(`Insufficient wallet balance. User has $${selectedUserBalance.toFixed(2)}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
-      await api.post('/admin/servers/allocate', allocateData);
+      const payload = {
+        ...allocateData,
+        amount: allocateData.payment_received ? 0 : parseFloat(allocateData.amount),
+      };
+      await api.post('/admin/servers/allocate', payload);
       toast.success('Server allocated successfully!' + (allocateData.send_email ? ' Credentials sent to user.' : ''));
       setAllocateOpen(false);
       resetAllocateForm();
@@ -113,6 +129,12 @@ const AdminServers = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleUserSelect = (userId) => {
+    const user = users.find(u => u.id === userId);
+    setSelectedUserBalance(user?.wallet_balance || 0);
+    setAllocateData({ ...allocateData, user_id: userId });
   };
 
   const resetAllocateForm = () => {
