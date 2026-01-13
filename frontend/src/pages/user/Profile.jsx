@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Shield, Loader2, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { User, Shield, Loader2, Eye, EyeOff, Copy, Check, Lock } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -15,6 +15,12 @@ const UserProfile = () => {
   const [qrData, setQrData] = useState(null);
   const [totpCode, setTotpCode] = useState('');
   const [disableCode, setDisableCode] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   const [profileData, setProfileData] = useState({
     fullName: user?.full_name || '',
@@ -36,6 +42,35 @@ const UserProfile = () => {
       toast.error('Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await api.post('/user/change-password', {
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+      });
+      toast.success('Password changed successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
