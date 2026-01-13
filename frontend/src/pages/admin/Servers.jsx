@@ -151,7 +151,10 @@ const AdminServers = () => {
       control_panel_password: '',
       additional_notes: '',
       send_email: true,
+      payment_received: true,
+      amount: '',
     });
+    setSelectedUserBalance(0);
   };
 
   const generatePassword = () => {
