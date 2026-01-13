@@ -728,6 +728,25 @@ async def setup_2fa(user: dict = Depends(get_current_user)):
     )
     return Setup2FAResponse(secret=secret, qr_uri=qr_uri)
 
+@auth_router.get("/2fa-qr/{secret}")
+async def get_2fa_qr(secret: str, user: dict = Depends(get_current_user)):
+    """Generate QR code image for 2FA setup"""
+    totp = pyotp.TOTP(secret)
+    qr_uri = totp.provisioning_uri(name=user["email"], issuer_name="KloudNests")
+    
+    # Generate QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(qr_uri)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to bytes
+    img_bytes = BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    return StreamingResponse(img_bytes, media_type="image/png")
+
 @auth_router.post("/verify-2fa")
 async def verify_2fa(data: Verify2FARequest, user: dict = Depends(get_current_user)):
     user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
