@@ -214,6 +214,17 @@ const AdminSettings = () => {
                   />
                   <p className="text-text-muted text-sm">Users will see this on the support page to contact via Skype</p>
                 </div>
+                <div className="space-y-2">
+                  <Label>Site URL</Label>
+                  <Input
+                    value={settings.site_url}
+                    onChange={(e) => setSettings({ ...settings, site_url: e.target.value })}
+                    placeholder="https://kloudnests.com"
+                    className="input-field"
+                    data-testid="site-url"
+                  />
+                  <p className="text-text-muted text-sm">Full URL used for email verification links and notifications</p>
+                </div>
               </div>
             </div>
           </TabsContent>
