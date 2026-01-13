@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks, Request, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -15,6 +15,8 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import pyotp
+import qrcode
+from io import BytesIO
 import secrets
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
