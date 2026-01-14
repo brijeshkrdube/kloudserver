@@ -558,8 +558,12 @@ const UserOrderServer = () => {
                 <div className="p-4 bg-white/5 rounded-lg">
                   <p className="text-text-muted text-sm">Payment Method</p>
                   <p className="text-text-primary font-medium">
-                    {orderData.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cryptocurrency'}
+                    {orderData.paymentMethod === 'wallet' ? 'Wallet Balance' : 
+                     orderData.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cryptocurrency'}
                   </p>
+                  {orderData.paymentMethod === 'wallet' && (
+                    <p className="text-xs text-green-500 mt-1">Payment will be deducted instantly</p>
+                  )}
                 </div>
               </div>
 
