@@ -10,7 +10,7 @@ Build a complete, production-ready web application for a server renting company 
 - All branding configurable via Admin → Settings
 
 ## User Choices
-- **Payment**: Manual bank transfer + cryptocurrency payments
+- **Payment**: Manual bank transfer + cryptocurrency payments + Wallet
 - **Email**: SendGrid for transactional emails  
 - **Authentication**: JWT-based custom auth with 2FA support
 - **Theme**: Dark theme with blue accents (blockchain/cloud inspired)
@@ -23,20 +23,10 @@ Build a complete, production-ready web application for a server renting company 
 - **Email**: SendGrid integration (configurable via admin settings)
 - **PDF Generation**: ReportLab - uses admin-configured company info
 
-## Invoice PDF Features
-- Company name from admin settings
-- Company address from admin settings
-- Company email from admin settings
-- Company phone from admin settings
-- Professional layout with dark header
-- Payment instructions with admin email
-
 ## What's Been Implemented
 
-### All Sessions Complete
-
-#### Core Features
-- Complete user authentication (register, login, 2FA, password reset)
+### Core Features (Complete)
+- Complete user authentication (register, login, 2FA, password reset, email verification)
 - Admin and user dashboards with full functionality
 - Service plan management (VPS, Shared, Dedicated)
 - Order flow with plan selection, configuration, add-ons, review
@@ -44,25 +34,79 @@ Build a complete, production-ready web application for a server renting company 
 - Support ticket system
 - Wallet and transaction history
 
-#### Branding (Updated)
-- Application name changed to "KloudNests" throughout
+### Payment & Server Provisioning Flow (Jan 2026 - Complete)
+1. **Pay from Wallet on Orders**
+   - Users can select "Pay from Wallet" during checkout
+   - Real-time wallet balance display with instant badge
+   - Automatic balance deduction and payment status update
+   - Error handling for insufficient balance
+
+2. **Enhanced Admin Orders Page**
+   - Customer details shown (name, email, company)
+   - Inline payment status dropdown (Pending → Paid)
+   - Inline order status dropdown (Pending → Active)
+   - "Provision" button appears when payment=paid AND status=pending
+
+3. **Enhanced Server Provisioning Dialog**
+   - Order summary section (ID, customer, plan, OS, amount, payment status)
+   - Server details (IP address, hostname)
+   - SSH credentials (username, password with generator, port)
+   - Control panel section (URL, username, password) - shown when order has control panel
+   - Additional notes textarea
+   - Send email toggle (checked by default)
+   - Cancel and Provision Server buttons
+
+4. **Admin Server Allocation (Manual)**
+   - User selection dropdown
+   - Plan selection (optional)
+   - Server details section
+   - SSH credentials section with password generator
+   - Control panel credentials (optional)
+   - **Payment Options:**
+     - External payment received (no wallet deduction)
+     - Deduct from user's wallet (with amount input)
+   - Send email toggle
+   - Invoice generation on allocation
+
+5. **Invoice Generation**
+   - Invoices created for all server allocations
+   - Includes server ID and payment method (wallet/external)
+   - Status set to "paid" immediately
+
+### Branding (Updated)
+- Application name: "KloudNests" throughout
 - Browser title: "KloudNests - Enterprise Cloud Infrastructure"
-- Navbar, Footer, Emails, PDFs all use KloudNests
 - All branding configurable via Admin Settings
 
-#### Data Center Management
+### Data Center Management
 - Admin CRUD at `/admin/datacenters`
 - 4 seeded locations: US East (NY), US West (LA), EU Central (Frankfurt), Asia (Singapore)
 
-#### Add-ons System  
+### Add-ons System  
 - Admin CRUD at `/admin/addons`
 - 7 seeded add-ons: cPanel/WHM, Plesk, SSL Standard/Wildcard, Daily Backup, IPv4, Priority Support
 
-#### Automation System
-- **Admin Automation Page** at `/admin/automation` with:
-  - Generate Renewal Invoices button
-  - Suspend Overdue Services button
-  - Task history tracking
+### Automation System
+- Admin Automation Page at `/admin/automation`
+- Generate Renewal Invoices button
+- Suspend Overdue Services button
+- Auto-renewal from wallet if sufficient balance
+- Service cancellation after 14 days overdue
+
+### Wallet System
+- 3-step topup flow: Amount/Method → Payment Details → Upload Proof
+- Bank Transfer and Crypto payment methods
+- Payment proof upload with transaction reference
+- Admin Topup Requests management page
+- Approve/Reject with email notifications
+- Auto-add funds to wallet on approval
+
+### Two-Factor Authentication (2FA)
+- Complete 2FA setup for users and admins
+- QR code generation for authenticator apps
+- Manual secret key entry option
+- Enable/Disable 2FA from Profile page
+- 2FA verification during login
 
 ## Navigation Structure
 
@@ -76,44 +120,39 @@ Build a complete, production-ready web application for a server renting company 
 - **Admin**: brijesh.kr.dube@gmail.com / Cloud@9874
 - **User**: test@test.com / Test123!
 
-## Bug Fixes Applied
+## Completed Bug Fixes
 1. Order page Select.Item empty value fix
 2. Ticket creation Select.Item empty value fix
 3. Brand name updated from CloudNest to KloudNests
 4. Plan creation 500 error - MongoDB _id serialization fix
 5. Contact page now uses dynamic settings from admin panel
+6. Servers not appearing in user panel - Pydantic model fix
+7. Password reset flow - added link to email
 
-## Completed Features (Latest Session - Jan 2026)
+## Prioritized Backlog (Remaining Tasks)
 
-### Wallet Recharge System
-- 3-step topup flow: Amount/Method → Payment Details → Upload Proof
-- Bank Transfer and Crypto payment methods
-- Payment proof upload with transaction reference
-- Admin Topup Requests management page (`/admin/topup-requests`)
-- Approve/Reject with email notifications
-- Auto-add funds to wallet on approval
+### P1 - High Priority
+- **Payment Gateway Integration (Stripe/Razorpay):** Automate payment processing and recurring billing
+- **Server Control Panel Integration:** Connect to Virtualizor/SolusVM API for reboot, shutdown, OS reinstall
 
-### Two-Factor Authentication (2FA)
-- Complete 2FA setup for users and admins
-- QR code generation for authenticator apps
-- Manual secret key entry option
-- Enable/Disable 2FA from Profile page
-- 2FA verification during login
+### P2 - Medium Priority
+- **Affiliate/Referral Program:** User referrals with commission tracking
+- **Knowledge Base / Documentation:** Admin-managed help articles and FAQs
 
-### Auto-Renewal from Wallet
-- Automatic service renewal if wallet has sufficient balance
-- Deducts from wallet and extends renewal date
-- Creates transaction record and paid invoice
-- Email confirmation on auto-renewal
-- Falls back to invoice if insufficient balance
+### P3 - Lower Priority
+- **Live Chat Support:** Real-time chat widget integration
+- **Service Status Page:** Public uptime display and incident reporting
 
-### Automatic Service Cancellation
-- Services suspended after 7 days overdue
-- Services cancelled after 14 days overdue
-- Email notifications at each stage
-- Order status updated on cancellation
+## Technical Debt
+- **Backend Refactoring:** The `server.py` file is over 3000 lines and should be split into modules:
+  - `/app/backend/routes/` - API route files
+  - `/app/backend/models/` - Pydantic models
+  - `/app/backend/services/` - Business logic
+  - `/app/backend/tests/` - Test files
 
-## MOCKED Integrations
-- **SendGrid**: Configure via Admin → Settings → Email tab
-- **Server Control**: Creates support tickets
-- **Background Tasks**: Manual trigger via Admin → Automation
+## 3rd Party Integrations
+- **SendGrid:** Transactional emails (configured via Admin → Settings)
+
+## Test Reports
+- `/app/test_reports/iteration_5.json` - Latest test results (100% pass rate)
+- `/app/tests/test_cloudnest_iteration5.py` - Backend API tests
