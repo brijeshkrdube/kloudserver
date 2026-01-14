@@ -28,6 +28,10 @@ const AdminOrders = () => {
     password: '',
     ssh_port: '22',
     panel_url: '',
+    panel_username: '',
+    panel_password: '',
+    additional_notes: '',
+    send_email: true,
   });
 
   useEffect(() => {
