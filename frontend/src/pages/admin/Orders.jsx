@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Check, X, Loader2, Server, User, Eye } from 'lucide-react';
+import { Package, Check, X, Loader2, Server, User, Eye, Wallet, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate, getStatusColor } from '../../lib/utils';
 import { toast } from 'sonner';
