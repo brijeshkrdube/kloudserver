@@ -352,15 +352,64 @@ const UserOrderServer = () => {
                 <RadioGroup
                   value={orderData.paymentMethod}
                   onValueChange={(v) => setOrderData({ ...orderData, paymentMethod: v })}
-                  className="flex gap-4"
+                  className="space-y-3"
                 >
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="bank_transfer" data-testid="payment-bank" />
-                    <span className="text-text-secondary">Bank Transfer</span>
+                  {/* Wallet Payment Option */}
+                  <label 
+                    className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      orderData.paymentMethod === 'wallet' 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <RadioGroupItem value="wallet" data-testid="payment-wallet" />
+                    <Wallet className="w-5 h-5 text-primary" />
+                    <div className="flex-1">
+                      <span className="text-text-primary font-medium">Pay from Wallet</span>
+                      <p className="text-sm text-text-muted">
+                        Balance: <span className={`font-mono ${(user?.wallet_balance || 0) >= getTotalPrice() ? 'text-green-500' : 'text-red-500'}`}>
+                          {formatCurrency(user?.wallet_balance || 0)}
+                        </span>
+                        {(user?.wallet_balance || 0) < getTotalPrice() && (
+                          <span className="text-red-500 ml-2">- Insufficient balance</span>
+                        )}
+                      </p>
+                    </div>
+                    {(user?.wallet_balance || 0) >= getTotalPrice() && (
+                      <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded">Instant</span>
+                    )}
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+
+                  {/* Bank Transfer */}
+                  <label 
+                    className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      orderData.paymentMethod === 'bank_transfer' 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <RadioGroupItem value="bank_transfer" data-testid="payment-bank" />
+                    <Building2 className="w-5 h-5 text-blue-500" />
+                    <div className="flex-1">
+                      <span className="text-text-primary font-medium">Bank Transfer</span>
+                      <p className="text-sm text-text-muted">Pay via bank transfer</p>
+                    </div>
+                  </label>
+
+                  {/* Crypto */}
+                  <label 
+                    className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      orderData.paymentMethod === 'crypto' 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
                     <RadioGroupItem value="crypto" data-testid="payment-crypto" />
-                    <span className="text-text-secondary">Crypto</span>
+                    <Bitcoin className="w-5 h-5 text-orange-500" />
+                    <div className="flex-1">
+                      <span className="text-text-primary font-medium">Cryptocurrency</span>
+                      <p className="text-sm text-text-muted">Pay with BTC, USDT, etc.</p>
+                    </div>
                   </label>
                 </RadioGroup>
               </div>
