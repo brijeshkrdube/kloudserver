@@ -1869,6 +1869,7 @@ async def admin_allocate_server(data: AllocateServerRequest, background_tasks: B
     
     # Handle payment
     wallet_balance = user.get("wallet_balance", 0)
+    amount_charged = 0
     
     if not data.payment_received:
         # Need to deduct from wallet
@@ -1880,6 +1881,8 @@ async def admin_allocate_server(data: AllocateServerRequest, background_tasks: B
                 status_code=400, 
                 detail=f"Insufficient wallet balance. User has ${wallet_balance:.2f}, required ${data.amount:.2f}"
             )
+        
+        amount_charged = data.amount
         
         # Deduct from wallet
         new_balance = wallet_balance - data.amount
@@ -1927,9 +1930,31 @@ async def admin_allocate_server(data: AllocateServerRequest, background_tasks: B
         "created_at": datetime.now(timezone.utc).isoformat(),
         "allocated_by": admin["email"],
         "payment_received_externally": data.payment_received,
-        "amount_charged": data.amount if not data.payment_received else 0
+        "amount_charged": amount_charged
     }
     await db.servers.insert_one(server_doc)
+    
+    # Create invoice for the allocation (whether paid from wallet or externally)
+    if amount_charged > 0 or data.payment_received:
+        invoice_amount = amount_charged if amount_charged > 0 else (data.amount or 0)
+        if invoice_amount > 0:
+            invoice_id = str(uuid.uuid4())
+            invoice_number = generate_invoice_number()
+            invoice_doc = {
+                "id": invoice_id,
+                "user_id": data.user_id,
+                "server_id": server_id,
+                "order_id": None,  # Manual allocation
+                "invoice_number": invoice_number,
+                "amount": invoice_amount,
+                "status": "paid",
+                "due_date": datetime.now(timezone.utc).isoformat(),
+                "paid_date": datetime.now(timezone.utc).isoformat(),
+                "description": f"Server Allocation: {plan_name} - {data.hostname}",
+                "payment_method": "wallet" if not data.payment_received else "external",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.invoices.insert_one(invoice_doc)
     
     # Send credentials email if requested
     if data.send_email:
