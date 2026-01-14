@@ -272,109 +272,226 @@ const AdminOrders = () => {
           </div>
         )}
 
-        {/* Provision Server Dialog */}
-        <Dialog open={provisionOpen} onOpenChange={setProvisionOpen}>
-          <DialogContent className="bg-background-paper border-white/10 max-w-lg">
+        {/* Provision Server Dialog - Enhanced */}
+        <Dialog open={provisionOpen} onOpenChange={(open) => {
+          setProvisionOpen(open);
+          if (!open) resetServerData();
+        }}>
+          <DialogContent className="bg-background-paper border-white/10 max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="font-heading text-xl">Provision Server</DialogTitle>
+              <DialogTitle className="font-heading text-xl">Provision Server for Order</DialogTitle>
             </DialogHeader>
             {selectedOrder && (
-              <div className="space-y-4 mt-4">
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <p className="text-text-muted text-sm">Order: <span className="text-text-primary font-mono">{selectedOrder.id.slice(0, 8)}</span></p>
-                  <p className="text-text-muted text-sm">Customer: <span className="text-text-primary">{selectedOrder.user_name} ({selectedOrder.user_email})</span></p>
-                  <p className="text-text-muted text-sm">Plan: <span className="text-text-primary">{selectedOrder.plan_name}</span></p>
-                  <p className="text-text-muted text-sm">OS: <span className="text-text-primary">{selectedOrder.os}</span></p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>IP Address *</Label>
-                    <Input
-                      placeholder="192.168.1.1"
-                      value={serverData.ip_address}
-                      onChange={(e) => setServerData({ ...serverData, ip_address: e.target.value })}
-                      className="input-field font-mono"
-                      data-testid="server-ip"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Hostname *</Label>
-                    <Input
-                      placeholder="server1.kloudnests.com"
-                      value={serverData.hostname}
-                      onChange={(e) => setServerData({ ...serverData, hostname: e.target.value })}
-                      className="input-field"
-                      data-testid="server-hostname"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Username *</Label>
-                    <Input
-                      placeholder="root"
-                      value={serverData.username}
-                      onChange={(e) => setServerData({ ...serverData, username: e.target.value })}
-                      className="input-field font-mono"
-                      data-testid="server-username"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Password *</Label>
-                    <Input
-                      type="text"
-                      placeholder="Secure password"
-                      value={serverData.password}
-                      onChange={(e) => setServerData({ ...serverData, password: e.target.value })}
-                      className="input-field font-mono"
-                      data-testid="server-password"
-                    />
+              <div className="space-y-6 mt-4">
+                {/* Order Summary */}
+                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-text-muted">Order ID</p>
+                      <p className="text-text-primary font-mono">{selectedOrder.id.slice(0, 8)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Customer</p>
+                      <p className="text-text-primary">{selectedOrder.user_name}</p>
+                      <p className="text-text-muted text-xs">{selectedOrder.user_email}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Plan</p>
+                      <p className="text-text-primary">{selectedOrder.plan_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">OS</p>
+                      <p className="text-text-primary">{selectedOrder.os}</p>
+                    </div>
+                    {selectedOrder.data_center_name && (
+                      <div>
+                        <p className="text-text-muted">Data Center</p>
+                        <p className="text-text-primary">{selectedOrder.data_center_name}</p>
+                      </div>
+                    )}
+                    {selectedOrder.control_panel && (
+                      <div>
+                        <p className="text-text-muted">Control Panel</p>
+                        <p className="text-text-primary capitalize">{selectedOrder.control_panel}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-text-muted">Amount</p>
+                      <p className="text-primary font-bold">{formatCurrency(selectedOrder.amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Payment</p>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedOrder.payment_status)}`}>
+                        {selectedOrder.payment_status === 'paid' ? '✓ Paid' : selectedOrder.payment_status}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>SSH Port</Label>
-                    <Input
-                      placeholder="22"
-                      value={serverData.ssh_port}
-                      onChange={(e) => setServerData({ ...serverData, ssh_port: e.target.value })}
-                      className="input-field font-mono"
-                      data-testid="server-port"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Panel URL (Optional)</Label>
-                    <Input
-                      placeholder="https://cpanel.server.com"
-                      value={serverData.panel_url}
-                      onChange={(e) => setServerData({ ...serverData, panel_url: e.target.value })}
-                      className="input-field"
-                      data-testid="server-panel"
-                    />
+                {/* Server Details */}
+                <div className="p-4 bg-white/5 rounded-lg space-y-4">
+                  <h3 className="font-semibold text-text-primary flex items-center gap-2">
+                    <Server className="w-4 h-4" />
+                    Server Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>IP Address *</Label>
+                      <Input
+                        placeholder="192.168.1.1"
+                        value={serverData.ip_address}
+                        onChange={(e) => setServerData({ ...serverData, ip_address: e.target.value })}
+                        className="input-field font-mono"
+                        data-testid="server-ip"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Hostname *</Label>
+                      <Input
+                        placeholder="server1.kloudnests.com"
+                        value={serverData.hostname}
+                        onChange={(e) => setServerData({ ...serverData, hostname: e.target.value })}
+                        className="input-field"
+                        data-testid="server-hostname"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <Button
-                  className="w-full btn-primary"
-                  onClick={handleProvisionServer}
-                  disabled={submitting}
-                  data-testid="submit-provision"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Provisioning...
-                    </>
-                  ) : (
-                    <>
-                      <Server className="w-5 h-5 mr-2" />
-                      Create Server & Send Credentials
-                    </>
-                  )}
-                </Button>
+                {/* SSH Credentials */}
+                <div className="p-4 bg-white/5 rounded-lg space-y-4">
+                  <h3 className="font-semibold text-text-primary">SSH / Root Credentials</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Username *</Label>
+                      <Input
+                        placeholder="root"
+                        value={serverData.username}
+                        onChange={(e) => setServerData({ ...serverData, username: e.target.value })}
+                        className="input-field font-mono"
+                        data-testid="server-username"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Password *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Secure password"
+                          value={serverData.password}
+                          onChange={(e) => setServerData({ ...serverData, password: e.target.value })}
+                          className="input-field font-mono"
+                          data-testid="server-password"
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={generatePassword} title="Generate password">
+                          Gen
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>SSH Port</Label>
+                      <Input
+                        placeholder="22"
+                        value={serverData.ssh_port}
+                        onChange={(e) => setServerData({ ...serverData, ssh_port: e.target.value })}
+                        className="input-field font-mono"
+                        data-testid="server-port"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Control Panel Credentials */}
+                {selectedOrder.control_panel && selectedOrder.control_panel !== 'none' && (
+                  <div className="p-4 bg-white/5 rounded-lg space-y-4">
+                    <h3 className="font-semibold text-text-primary">Control Panel ({selectedOrder.control_panel})</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Panel URL</Label>
+                        <Input
+                          placeholder={`https://${serverData.ip_address || 'server'}:2087`}
+                          value={serverData.panel_url}
+                          onChange={(e) => setServerData({ ...serverData, panel_url: e.target.value })}
+                          className="input-field"
+                          data-testid="server-panel"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Username</Label>
+                        <Input
+                          placeholder="admin"
+                          value={serverData.panel_username}
+                          onChange={(e) => setServerData({ ...serverData, panel_username: e.target.value })}
+                          className="input-field font-mono"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Password</Label>
+                        <Input
+                          placeholder="Panel password"
+                          value={serverData.panel_password}
+                          onChange={(e) => setServerData({ ...serverData, panel_password: e.target.value })}
+                          className="input-field font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Notes */}
+                <div className="space-y-2">
+                  <Label>Additional Notes (included in email)</Label>
+                  <Textarea
+                    value={serverData.additional_notes}
+                    onChange={(e) => setServerData({ ...serverData, additional_notes: e.target.value })}
+                    placeholder="Any special instructions for the user..."
+                    className="input-field min-h-[80px]"
+                  />
+                </div>
+
+                {/* Send Email Toggle */}
+                <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
+                  <input
+                    type="checkbox"
+                    id="send_email"
+                    checked={serverData.send_email}
+                    onChange={(e) => setServerData({ ...serverData, send_email: e.target.checked })}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="send_email" className="text-text-primary cursor-pointer">
+                    Send credentials email to customer automatically
+                  </label>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setProvisionOpen(false)}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 btn-primary"
+                    onClick={handleProvisionServer}
+                    disabled={submitting}
+                    data-testid="submit-provision"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Provisioning...
+                      </>
+                    ) : (
+                      <>
+                        <Server className="w-5 h-5 mr-2" />
+                        Provision Server
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>
