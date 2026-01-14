@@ -1743,10 +1743,16 @@ async def admin_create_server(data: AdminServerCreate, background_tasks: Backgro
         "os": order["os"],
         "control_panel": order.get("control_panel"),
         "panel_url": data.panel_url,
+        "panel_username": data.panel_username,
+        "panel_password": data.panel_password,
+        "additional_notes": data.additional_notes,
         "status": "active",
         "plan_name": order["plan_name"],
+        "data_center_id": order.get("data_center_id"),
+        "data_center_name": order.get("data_center_name"),
         "renewal_date": renewal_date.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "provisioned_by": admin["email"]
     }
     await db.servers.insert_one(server_doc)
     
@@ -1756,29 +1762,73 @@ async def admin_create_server(data: AdminServerCreate, background_tasks: Backgro
         {"$set": {"order_status": "active", "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     
-    # Send credentials email
+    # Send credentials email if requested
     user = await db.users.find_one({"id": order["user_id"]}, {"_id": 0})
-    if user:
+    if user and data.send_email:
+        # Build control panel section if provided
+        control_panel_section = ""
+        if data.panel_url:
+            control_panel_section = f"""
+            <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; color: #0369a1;">Control Panel Access</h3>
+                <p><strong>URL:</strong> <a href="{data.panel_url}">{data.panel_url}</a></p>
+                <p><strong>Username:</strong> {data.panel_username or 'Same as SSH'}</p>
+                <p><strong>Password:</strong> {data.panel_password or 'Same as SSH'}</p>
+            </div>
+            """
+        
+        # Build notes section if provided
+        notes_section = ""
+        if data.additional_notes:
+            notes_section = f"""
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; color: #92400e;">Additional Information</h3>
+                <p>{data.additional_notes}</p>
+            </div>
+            """
+        
         background_tasks.add_task(
             send_email,
             user["email"],
-            "Your Server is Ready! - KloudNests",
+            f"Your Server is Ready! - {data.hostname}",
             f"""
-            <h2>Your Server is Ready!</h2>
-            <p>Great news, {user['full_name']}! Your server has been provisioned.</p>
-            <hr>
-            <p><strong>Server Details:</strong></p>
+            <h2>🎉 Your Server Has Been Provisioned!</h2>
+            <p>Hi {user['full_name']},</p>
+            <p>Great news! Your server has been set up and is ready to use.</p>
+            
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #1e40af;">SSH / Server Access</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Plan:</strong></td><td>{order['plan_name']}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Hostname:</strong></td><td>{data.hostname}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>IP Address:</strong></td><td>{data.ip_address}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Username:</strong></td><td>{data.username}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Password:</strong></td><td>{data.password}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>SSH Port:</strong></td><td>{data.ssh_port}</td></tr>
+                    <tr><td style="padding: 8px 0;"><strong>OS:</strong></td><td>{order['os']}</td></tr>
+                </table>
+            </div>
+            
+            <div style="background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0;">
+                <strong>Quick Connect Command:</strong><br>
+                ssh {data.username}@{data.ip_address} -p {data.ssh_port}
+            </div>
+            
+            {control_panel_section}
+            {notes_section}
+            
+            <p><strong>🔐 Security Tips:</strong></p>
             <ul>
-                <li><strong>IP Address:</strong> {data.ip_address}</li>
-                <li><strong>Hostname:</strong> {data.hostname}</li>
-                <li><strong>Username:</strong> {data.username}</li>
-                <li><strong>Password:</strong> {data.password}</li>
-                <li><strong>SSH Port:</strong> {data.ssh_port}</li>
-                {f'<li><strong>Panel URL:</strong> {data.panel_url}</li>' if data.panel_url else ''}
+                <li>Change your password after first login</li>
+                <li>Keep your credentials secure</li>
+                <li>Enable firewall rules</li>
             </ul>
-            <hr>
-            <p>You can view your server details anytime in your dashboard.</p>
-            <p><strong>Important:</strong> Please change your password after first login.</p>
+            
+            <p>You can view your server details anytime in your <a href="https://kloudnests.com/dashboard/services">dashboard</a>.</p>
+            
+            <p>If you have any questions, our support team is here to help!</p>
+            
+            <p>Best regards,<br><strong>KloudNests Team</strong></p>
             """
         )
     
