@@ -61,14 +61,16 @@ const UserOrderServer = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [plansRes, dcRes, addonsRes] = await Promise.all([
+        const [plansRes, dcRes, addonsRes, settingsRes] = await Promise.all([
           api.get('/plans'),
           api.get('/datacenters/'),
-          api.get('/addons/')
+          api.get('/addons/'),
+          axios.get(`${API_URL}/api/settings/public`)
         ]);
         setPlans(plansRes.data);
         setDatacenters(dcRes.data);
         setAddons(addonsRes.data);
+        setSettings(settingsRes.data);
         
         // Set default data center if available
         if (dcRes.data.length > 0) {
@@ -83,6 +85,13 @@ const UserOrderServer = () => {
     };
     fetchData();
   }, [api]);
+
+  const handleCopy = (text, type) => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast.success('Copied to clipboard');
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   const selectedPlan = plans.find(p => p.id === orderData.planId);
   const selectedDatacenter = datacenters.find(dc => dc.id === orderData.dataCenterId);
