@@ -76,24 +76,45 @@ const AdminOrders = () => {
         password: serverData.password,
         ssh_port: parseInt(serverData.ssh_port),
         panel_url: serverData.panel_url || null,
+        panel_username: serverData.panel_username || null,
+        panel_password: serverData.panel_password || null,
+        additional_notes: serverData.additional_notes || null,
+        send_email: serverData.send_email,
       });
       toast.success('Server provisioned and credentials sent to customer!');
       setProvisionOpen(false);
       setSelectedOrder(null);
-      setServerData({
-        ip_address: '',
-        hostname: '',
-        username: 'root',
-        password: '',
-        ssh_port: '22',
-        panel_url: '',
-      });
+      resetServerData();
       fetchOrders();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to provision server');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetServerData = () => {
+    setServerData({
+      ip_address: '',
+      hostname: '',
+      username: 'root',
+      password: '',
+      ssh_port: '22',
+      panel_url: '',
+      panel_username: '',
+      panel_password: '',
+      additional_notes: '',
+      send_email: true,
+    });
+  };
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setServerData({ ...serverData, password });
   };
 
   if (loading) {
