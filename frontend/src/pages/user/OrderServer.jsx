@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Server, Check, ChevronRight, Loader2, MapPin, Package, Plus, Minus } from 'lucide-react';
+import { Server, Check, ChevronRight, Loader2, MapPin, Package, Plus, Minus, Wallet, Building2, Bitcoin } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Label } from '../../components/ui/label';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 const UserOrderServer = () => {
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, user, refreshUser } = useAuth();
   const [plans, setPlans] = useState([]);
   const [datacenters, setDatacenters] = useState([]);
   const [addons, setAddons] = useState([]);
@@ -29,7 +29,7 @@ const UserOrderServer = () => {
     os: 'Ubuntu 22.04',
     controlPanel: 'none',
     selectedAddons: [],
-    paymentMethod: 'bank_transfer',
+    paymentMethod: 'wallet',
     notes: '',
   });
 
