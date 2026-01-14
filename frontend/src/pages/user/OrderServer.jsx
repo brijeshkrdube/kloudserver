@@ -441,6 +441,63 @@ const UserOrderServer = () => {
                     </div>
                   </label>
                 </RadioGroup>
+
+                {/* Show Payment Details for Bank/Crypto */}
+                {orderData.paymentMethod === 'bank_transfer' && settings?.bank_transfer_details && (
+                  <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Bank Transfer Details
+                    </h4>
+                    <pre className="text-text-secondary text-sm whitespace-pre-wrap font-mono bg-white/5 p-3 rounded">
+                      {settings.bank_transfer_details}
+                    </pre>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => handleCopy(settings.bank_transfer_details, 'bank')}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      {copied === 'bank' ? 'Copied!' : 'Copy Details'}
+                    </Button>
+                  </div>
+                )}
+
+                {orderData.paymentMethod === 'crypto' && settings?.crypto_addresses && (
+                  <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                    <h4 className="text-orange-400 font-medium mb-2 flex items-center gap-2">
+                      <Bitcoin className="w-4 h-4" />
+                      Cryptocurrency Addresses
+                    </h4>
+                    <pre className="text-text-secondary text-sm whitespace-pre-wrap font-mono bg-white/5 p-3 rounded">
+                      {settings.crypto_addresses}
+                    </pre>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => handleCopy(settings.crypto_addresses, 'crypto')}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      {copied === 'crypto' ? 'Copied!' : 'Copy Addresses'}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Warning if no details configured */}
+                {orderData.paymentMethod === 'bank_transfer' && !settings?.bank_transfer_details && (
+                  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 text-sm">
+                    Bank transfer details will be provided after order placement. Check your email for payment instructions.
+                  </div>
+                )}
+                {orderData.paymentMethod === 'crypto' && !settings?.crypto_addresses && (
+                  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 text-sm">
+                    Crypto payment addresses will be provided after order placement. Check your email for payment instructions.
+                  </div>
+                )}
               </div>
             </div>
 
