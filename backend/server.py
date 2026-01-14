@@ -1115,6 +1115,42 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     
     total_amount = amount + addon_total
     
+    # Handle wallet payment
+    payment_status = "pending"
+    invoice_status = "unpaid"
+    
+    if order_data.payment_method == "wallet":
+        # Check wallet balance
+        current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+        wallet_balance = current_user.get("wallet_balance", 0)
+        
+        if wallet_balance < total_amount:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient wallet balance. You have ${wallet_balance:.2f}, need ${total_amount:.2f}"
+            )
+        
+        # Deduct from wallet
+        new_balance = wallet_balance - total_amount
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"wallet_balance": new_balance}}
+        )
+        
+        # Create wallet transaction
+        await db.transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "type": "debit",
+            "amount": total_amount,
+            "description": f"Order: {plan['name']} ({order_data.billing_cycle})",
+            "reference": f"ORDER-{str(uuid.uuid4())[:8].upper()}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        payment_status = "paid"
+        invoice_status = "paid"
+    
     order_id = str(uuid.uuid4())
     order_doc = {
         "id": order_id,
@@ -1130,8 +1166,8 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         "addon_details": addon_details,
         "amount": total_amount,
         "payment_method": order_data.payment_method,
-        "payment_status": "pending",
-        "order_status": "pending",
+        "payment_status": payment_status,
+        "order_status": "pending" if payment_status == "paid" else "awaiting_payment",
         "notes": order_data.notes,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -1147,9 +1183,9 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         "order_id": order_id,
         "invoice_number": invoice_number,
         "amount": total_amount,
-        "status": "unpaid",
+        "status": invoice_status,
         "due_date": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-        "paid_date": None,
+        "paid_date": datetime.now(timezone.utc).isoformat() if invoice_status == "paid" else None,
         "description": f"Order: {plan['name']} - {order_data.billing_cycle}" + (f" + {len(addon_details)} add-ons" if addon_details else ""),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
