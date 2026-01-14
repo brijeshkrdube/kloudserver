@@ -261,6 +261,10 @@ class AdminServerCreate(BaseModel):
     password: str
     ssh_port: int = 22
     panel_url: Optional[str] = None
+    panel_username: Optional[str] = None
+    panel_password: Optional[str] = None
+    additional_notes: Optional[str] = None
+    send_email: bool = True
 
 class AdminOrderUpdate(BaseModel):
     order_status: Optional[str] = None
