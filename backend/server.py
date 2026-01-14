@@ -122,7 +122,7 @@ class OrderCreate(BaseModel):
     control_panel: Optional[str] = None
     data_center_id: Optional[str] = None
     addons: Optional[List[str]] = []
-    payment_method: Literal["bank_transfer", "crypto"]
+    payment_method: Literal["wallet", "bank_transfer", "crypto"]
     notes: Optional[str] = None
 
 class OrderResponse(BaseModel):
