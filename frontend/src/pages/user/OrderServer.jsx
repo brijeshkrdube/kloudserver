@@ -128,6 +128,15 @@ const UserOrderServer = () => {
       return;
     }
 
+    // Validate wallet balance if paying from wallet
+    if (orderData.paymentMethod === 'wallet') {
+      const totalPrice = getTotalPrice();
+      if ((user?.wallet_balance || 0) < totalPrice) {
+        toast.error(`Insufficient wallet balance. You need ${formatCurrency(totalPrice)} but have ${formatCurrency(user?.wallet_balance || 0)}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const response = await api.post('/orders/', {
@@ -140,7 +149,13 @@ const UserOrderServer = () => {
         payment_method: orderData.paymentMethod,
         notes: orderData.notes || null,
       });
-      toast.success('Order placed successfully! Invoice sent to your email.');
+      
+      if (orderData.paymentMethod === 'wallet') {
+        toast.success('Order placed and paid successfully! Your server will be provisioned soon.');
+        refreshUser(); // Refresh user data to update wallet balance
+      } else {
+        toast.success('Order placed successfully! Invoice sent to your email.');
+      }
       navigate(`/dashboard/orders/${response.data.id}`);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to place order');
