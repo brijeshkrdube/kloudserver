@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Server, Check, ChevronRight, Loader2, MapPin, Package, Plus, Minus, Wallet, Building2, Bitcoin } from 'lucide-react';
+import { Server, Check, ChevronRight, Loader2, MapPin, Package, Plus, Minus, Wallet, Building2, Bitcoin, Copy } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { Label } from '../../components/ui/label';
@@ -11,6 +11,9 @@ import { Checkbox } from '../../components/ui/checkbox';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../lib/utils';
 import { toast } from 'sonner';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const UserOrderServer = () => {
   const navigate = useNavigate();
@@ -18,9 +21,11 @@ const UserOrderServer = () => {
   const [plans, setPlans] = useState([]);
   const [datacenters, setDatacenters] = useState([]);
   const [addons, setAddons] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+  const [copied, setCopied] = useState(null);
 
   const [orderData, setOrderData] = useState({
     planId: '',
